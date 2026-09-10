@@ -97,6 +97,10 @@ aside.side{width:248px; flex-shrink:0; background:var(--card); color:var(--ink);
 .topbar h1{font-size:16px; margin:0; font-weight:700}
 .topbar .sp{flex:1}
 .content{padding:24px 26px; max-width:1580px; width:100%}
+.hamburger{display:none; background:transparent; border:none; color:var(--ink); font-size:20px; line-height:1; cursor:pointer; padding:6px 9px; border-radius:8px; flex-shrink:0}
+.hamburger:hover{background:var(--mint-2)}
+.mobile-backdrop{display:none; position:fixed; inset:0; background:rgba(6,10,3,.6); z-index:290}
+.mobile-backdrop.show{display:block}
 
 .panel{background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:20px}
 .panel .ph{padding:14px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
@@ -157,6 +161,56 @@ tr:hover td{background:var(--mint-2)}
   body{background:#fff}
 }
 
+/* ---------------------------------------------------------------------------
+   RESPONSIVE — tablet (≤1024px) ve mobil (≤860px / ≤640px). Sidebar mobilde
+   off-canvas'a döner (hamburger ile aç/kapa), grid'ler tek sütuna iner, modal
+   tam ekran olur.
+--------------------------------------------------------------------------- */
+@media (max-width: 1024px){
+  .content{padding:18px 20px}
+  .grid4{grid-template-columns:1fr 1fr}
+}
+@media (max-width: 860px){
+  aside.side{position:fixed; left:0; top:0; height:100dvh; z-index:300; width:264px;
+    transform:translateX(-100%); transition:transform .22s ease; box-shadow:0 0 40px rgba(0,0,0,.5)}
+  aside.side.mobile-open{transform:translateX(0)}
+  .side.collapsed{width:264px}
+  .side.collapsed .logo-txt, .side.collapsed .nav-lbl, .side.collapsed .cnt{display:block}
+  .side.collapsed .nav-group-head{display:flex}
+  .side.collapsed .nav-group.collapsed .nav-group-body{display:none}
+  .side.collapsed .nav-group:not(.collapsed) .nav-group-body{display:flex}
+  .hamburger{display:inline-flex; align-items:center; justify-content:center}
+  .topbar{padding:12px 16px; gap:10px}
+  .topbar h1{font-size:15px}
+  .content{padding:16px}
+  .kpi-row{grid-template-columns:1fr 1fr}
+}
+@media (max-width: 640px){
+  .grid2, .grid3, .grid4{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:1fr 1fr; gap:10px}
+  .kpi{padding:12px 13px}
+  .kpi .val{font-size:21px}
+  .content{padding:12px}
+  .panel .ph{padding:12px 14px; flex-wrap:wrap}
+  .panel .pb{padding:12px 14px}
+  table{font-size:12px}
+  th{padding:8px 9px; font-size:10.5px}
+  td{padding:8px 9px}
+  .overlay{padding:0; align-items:flex-end}
+  .modal{max-width:100%; width:100%; max-height:92dvh; border-radius:16px 16px 0 0; animation:slideUp .2s ease}
+  @keyframes slideUp{from{transform:translateY(24px); opacity:0} to{transform:none; opacity:1}}
+  .modal .mh{padding:14px 16px}
+  .modal .mb{padding:14px 16px}
+  .modal .mf{padding:12px 16px; flex-direction:column-reverse; align-items:stretch}
+  .modal .mf .btn{width:100%; text-align:center}
+  .login-card{padding:22px; max-width:100%}
+  .btn{padding:9px 14px}
+  input, select, textarea{font-size:14px} /* iOS otomatik yakınlaştırmasını önler */
+}
+@media (max-width: 400px){
+  .kpi-row{grid-template-columns:1fr}
+}
+
 #loginScreen{position:fixed; inset:0; background:var(--sand); display:flex; align-items:center; justify-content:center; z-index:500}
 .login-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:32px; width:100%; max-width:380px; box-shadow:var(--shadow)}
 .login-card .logo-row{justify-content:center; margin-bottom:18px}
@@ -212,12 +266,14 @@ tr:hover td{background:var(--mint-2)}
 
   <main class="main">
     <div class="topbar">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menü" title="Menü">☰</button>
       <h1 id="pageTitle">Anasayfa</h1>
       <div class="sp"></div>
       <button class="btn btn-leaf hidden" id="btnAdd">+ Yeni</button>
     </div>
     <div class="content" id="content"></div>
   </main>
+  <div class="mobile-backdrop" id="mobileBackdrop"></div>
 </div>
 
 <div class="overlay hidden" id="overlay"><div class="modal" id="modalBody"></div></div>
@@ -508,6 +564,26 @@ document.getElementById('snav').addEventListener('click', function(e){
 });
 document.getElementById('brandToggle').addEventListener('click', function(){
   document.getElementById('side').classList.toggle('collapsed');
+});
+
+// ---------------------------------------------------------------------------
+// MOBİL MENÜ — sidebar ≤860px'te off-canvas olur, hamburger ile aç/kapa.
+// ---------------------------------------------------------------------------
+function mobilMenuAc(){
+  document.getElementById('side').classList.add('mobile-open');
+  document.getElementById('mobileBackdrop').classList.add('show');
+}
+function mobilMenuKapat(){
+  document.getElementById('side').classList.remove('mobile-open');
+  document.getElementById('mobileBackdrop').classList.remove('show');
+}
+document.getElementById('hamburgerBtn').addEventListener('click', function(){
+  var side = document.getElementById('side');
+  side.classList.contains('mobile-open') ? mobilMenuKapat() : mobilMenuAc();
+});
+document.getElementById('mobileBackdrop').addEventListener('click', mobilMenuKapat);
+document.getElementById('snav').addEventListener('click', function(e){
+  if(e.target.closest('.nav-item') && window.innerWidth <= 860) mobilMenuKapat();
 });
 
 function showView(v){
