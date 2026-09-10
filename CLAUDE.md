@@ -2,6 +2,44 @@
 
 > **BU DOSYA PROJENİN TEK HAFIZASIDIR.** Yeni oturumda önce bu dosya okunmalı.
 
+## 10.09.2026 — FAZ 2: RAKİP ANALİZİ SONRASI 4 ÖZELLİK EKLENDİ
+
+Apify google-search-scraper ile SoftSpec/Trustwell-FoodLogiQ/beCPG (BRCGS spec-
+yönetim pazarındaki gerçek oyuncular) birincil kaynaklarından karşılaştırma
+yapıldı, 5 eksik bulundu. Kullanıcı kararı: madde 1 (tedarikçi portalı) için
+**yalnızca alt yapı** istendi, tedarikçiye giriş/hesap AÇILMADI; diğer 4 madde
+uygulandı. SQL: `sql/05_rakip_analizi_ekleri.sql` (canlıda çalıştırıldı, doğrulandı).
+
+1. **Tedarikçi bilgisi (alt yapı, portal YOK)** — `urun_receteler.tedarikci_adi`
+   (serbest metin) eklendi, reçete kalemi formunda "Tedarikçi (opsiyonel)" alanı.
+   Gerçek bir tedarikçi girişi/portalı BİLİNÇLİ OLARAK yazılmadı — kullanıcı
+   "sisteme girmesin, alt yapısı hazır olsun" dedi. İleride gerçek portal
+   istenirse bu kolon referans noktası olur.
+2. **Onay imza zinciri** — `urun_spesifikasyonlari.onaylayan_rol` (unvan/rol,
+   ör. "Kalite Müdürü") eklendi; Onayla ve Kaydet'te ZORUNLU. Mevcut
+   `onaylayan_ad`/`onay_tarihi` server-stamp mantığına ek, versiyon geçmişinde
+   de görünür ("X unvanıyla onaylandı").
+3. **Esnek özel alanlar** — `urun_spesifikasyonlari.ozel_alanlar` (jsonb dizi,
+   `{ad,deger}`), spesifikasyon formunda dinamik satır ekle/çıkar arayüzü.
+   Ürün kategorisine göre değişen ek bilgi (ör. "Glüten Testi Yöntemi") için
+   ayrı şema tablosu KURULMADI — sade jsonb yeterli görüldü.
+4. **Etiket metni üretimi** — yeni "🏷 Etiket Metni" butonu (Spesifikasyon
+   detayında), DB değişikliği GEREKMEDİ — mevcut reçete+spesifikasyon
+   verisinden istemci tarafında TGK formatında içindekiler/alerjen/beslenme
+   metni türetilir (alerjenler BÜYÜK HARF vurgulu), kopyalanabilir/yazdırılabilir.
+5. **Sertifika süre takibi** — yeni tablo `urun_sertifikalari` (Helal/Organik/
+   BRCGS/IFS/Kosher/ISO 22000/Diğer), yeni "Sertifikalar" ekranı, geçerlilik
+   bitişine 60 gün kala "Süresi Yaklaşıyor" rozeti, Anasayfa/sidebar sayaç
+   (`cntSertBitiyor`). Doküman Yönetimi ile entegrasyon YAPILMADI (ayrı,
+   bağımsız tablo) — kapsam basit tutuldu.
+
+**Test durumu:** SQL canlıda çalıştırılıp doğrulandı (yeni kolonlar/tablo
+`information_schema` ile teyit edildi). `URS.html` `node --check` ile sözdizimi
+doğrulandı. Playwright bu oturumda bağlanamadığı için tarayıcı testi
+YAPILAMADI — kullanıcının canlı test etmesi gerekiyor.
+
+---
+
 ## 09.09.2026 — FAZ 1 KODLANDI, CANLI TEST BEKLİYOR
 
 ### Kapsam kararı
@@ -80,14 +118,23 @@ kullanıcı gözden geçirip elle kaydetmeden hiçbir şey veritabanına yazılm
   Reçeteler, Spesifikasyonlar, Alerjen Matrisi) HENÜZ kullanıcı tarafından
   canlı test edilmedi** — gerçek girişle bir sonraki adım budur.
 
+### Yayın (09.09.2026 — TAMAMLANDI)
+- GitHub reposu: `github.com/buluthakan86/qdataline-urun` (public), `URS.html`+`sql/`+
+  `supabase/`+`CLAUDE.md`+`_redirects` push edildi.
+- Cloudflare Pages projesi `qdataline-urun` GitHub'a bağlı, otomatik deploy aktif.
+- Custom domain **`urun.qdataline.com` CANLI ve SSL'li** (CNAME + Pages domain
+  doğrulaması tamamlandı, `curl` ile HTTP 200 doğrulandı).
+- **Ekipman Hub'ına (`eksenpro/index.html`, ayrı repo `qdataline`) 11. modül kartı
+  eklendi** — `MODULES` dizisine `id:'urun', code:'urun'` girişi + `I18N`'e
+  `mod_urun_tag/title/desc` (TR/EN) + `MOD_CODE`'a `urun:'URS'` kayıt künyesi.
+  Yalnızca `eksenpro/index.html` commit edildi (o repoda ilgisiz bekleyen başka
+  değişiklikler vardı, onlara dokunulmadı — daha önceki modüllerde de aynı
+  disiplin uygulanmıştı). Canlıda `qdataline.com` üzerinden doğrulandı.
+
 ### Sıradaki adımlar
-1. Kullanıcı canlı girişle Ürünler → Reçeteler → Spesifikasyon → AI besin değeri
-   → PDF/Yazdır → versiyon geçmişi akışını uçtan uca test etmeli.
-2. ~~Fuşya renk çakışması~~ — 09.09.2026'da Lime'a geçirildi, tamamlandı.
-3. GitHub reposu açılıp Cloudflare Pages'e bağlanmalı (SDR/İSG deseni), bir
-   alt alan adı seçilmeli (öneri: `urun.qdataline.com`).
-4. Canlıya çıkınca Ekipman Hub'ındaki modül kartı listesine eklenmeli
-   (`eksenpro/index.html`).
-5. "Dış kaynaklı doküman takip sistemi" — kullanıcı 09.09.2026'da bunu bilinçli
+1. **Kullanıcının canlı testi** — tek kalan gerçek iş: giriş yapıp Ürünler →
+   Reçeteler → Spesifikasyon → AI besin değeri → PDF/Yazdır → versiyon geçmişi
+   akışını uçtan uca denemesi.
+2. "Dış kaynaklı doküman takip sistemi" — kullanıcı 09.09.2026'da bunu bilinçli
    olarak beklemede bıraktı ("notlar da kalsın") — bu modül mü, Doküman Yönetimi
    mi olacağı HENÜZ karar verilmedi, ileride ayrıca gündeme gelecek.

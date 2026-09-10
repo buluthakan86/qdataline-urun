@@ -315,7 +315,7 @@ var I18N = {
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış Yap':'Log Out',
   'Reçete ve Spesifikasyon Yönetimi':'Recipe & Specification Management',
   'Anasayfa':'Overview','Ürünler':'Products','Reçeteler':'Recipes','Spesifikasyonlar':'Specifications',
-  'Alerjen Matrisi':'Allergen Matrix','Genel':'General','Ürün Yönetimi':'Product Management',
+  'Alerjen Matrisi':'Allergen Matrix','Genel':'General','Ürün Yönetimi':'Product Management','Sertifikalar':'Certificates',
   'Kaydet':'Save','Vazgeç':'Cancel','Kapat':'Close','Sil':'Delete','Düzenle':'Edit','Ekle':'Add',
   'Yükleniyor…':'Loading…','Kayıt yok.':'No records.',
   '+ Yeni Ürün':'+ New Product','+ Yeni Reçete Kalemi':'+ New Recipe Item',
@@ -374,6 +374,7 @@ function icoBox(){ return svg('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v
 function icoFlask(){ return svg('<path d="M9 2v6L4 19a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L15 8V2"/><path d="M9 2h6M7 15h10"/>'); }
 function icoDoc(){ return svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/>'); }
 function icoAlert(){ return svg('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>'); }
+function icoCert(){ return svg('<circle cx="12" cy="8" r="6"/><path d="M9 13.5 7 22l5-3 5 3-2-8.5"/>'); }
 
 var NAV_CONFIG = [
   { label:'Genel', items:[ { v:'anasayfa', icon:icoDash, label:'Anasayfa' } ]},
@@ -381,7 +382,8 @@ var NAV_CONFIG = [
     { v:'urunler', icon:icoBox, label:'Ürünler', cnt:'cntUrun' },
     { v:'receteler', icon:icoFlask, label:'Reçeteler' },
     { v:'spesifikasyonlar', icon:icoDoc, label:'Spesifikasyonlar', cnt:'cntSpecTaslak' },
-    { v:'alerjen', icon:icoAlert, label:'Alerjen Matrisi' }
+    { v:'alerjen', icon:icoAlert, label:'Alerjen Matrisi' },
+    { v:'sertifikalar', icon:icoCert, label:'Sertifikalar', cnt:'cntSertBitiyor' }
   ]}
 ];
 function buildNav(){
@@ -404,7 +406,7 @@ function buildNav(){
 // STATE / AUTH
 // ---------------------------------------------------------------------------
 var cloudUser = null, cloudTenantId = null, cloudUserRole = '';
-var state = { urunler:[], receteler:[], specler:[], versiyonlar:[] };
+var state = { urunler:[], receteler:[], specler:[], versiyonlar:[], sertifikalar:[] };
 var curView = 'anasayfa';
 
 async function doLogin(){
@@ -462,15 +464,17 @@ function canEdit(){ return cloudUserRole==='ADMIN' || cloudUserRole==='EDITOR'; 
 // VERİ YÜKLEME
 // ---------------------------------------------------------------------------
 async function loadAll(){
-  var [ur, rc, sp, vr] = await Promise.all([
+  var [ur, rc, sp, vr, st] = await Promise.all([
     tumSatirlar(function(){ return sb.from('urun_urunler').select('*').is('deleted_at', null).order('ad'); }),
     tumSatirlar(function(){ return sb.from('urun_receteler').select('*').is('deleted_at', null).order('sira_no'); }),
     tumSatirlar(function(){ return sb.from('urun_spesifikasyonlari').select('*').is('deleted_at', null).order('created_at', {ascending:false}); }),
-    tumSatirlar(function(){ return sb.from('urun_spesifikasyon_versiyonlari').select('*').order('created_at', {ascending:false}).limit(500); })
+    tumSatirlar(function(){ return sb.from('urun_spesifikasyon_versiyonlari').select('*').order('created_at', {ascending:false}).limit(500); }),
+    tumSatirlar(function(){ return sb.from('urun_sertifikalari').select('*').is('deleted_at', null).order('gecerlilik_bitis', {ascending:true}); })
   ]);
-  state.urunler = ur; state.receteler = rc; state.specler = sp; state.versiyonlar = vr;
+  state.urunler = ur; state.receteler = rc; state.specler = sp; state.versiyonlar = vr; state.sertifikalar = st;
   document.getElementById('cntUrun').textContent = ur.filter(function(u){return u.durum==='Aktif';}).length;
   document.getElementById('cntSpecTaslak').textContent = sp.filter(function(s){return s.durum==='Taslak';}).length;
+  document.getElementById('cntSertBitiyor').textContent = st.filter(function(s){return sertDurum(s)!=='Geçerli';}).length;
 }
 function urunAdi(id){ var u=state.urunler.find(function(x){return x.id===id;}); return u?u.ad:'—'; }
 function receteOf(urunId){ return state.receteler.filter(function(r){return r.urun_id===urunId;}).sort(function(a,b){return a.sira_no-b.sira_no;}); }
@@ -480,11 +484,21 @@ function urunAlerjenleri(urunId){
   receteOf(urunId).forEach(function(r){ (r.alerjenler||[]).forEach(function(a){ set[a]=true; }); });
   return Object.keys(set);
 }
+function sertifikaOf(urunId){ return state.sertifikalar.filter(function(s){return s.urun_id===urunId;}); }
+function sertDurum(s){
+  if(!s.gecerlilik_bitis) return 'Geçerli';
+  var bugun = new Date(); bugun.setHours(0,0,0,0);
+  var bitis = new Date(s.gecerlilik_bitis);
+  var farkGun = Math.round((bitis-bugun)/86400000);
+  if(farkGun < 0) return 'Süresi Doldu';
+  if(farkGun <= 60) return 'Süresi Yaklaşıyor';
+  return 'Geçerli';
+}
 
 // ---------------------------------------------------------------------------
 // NAVİGASYON
 // ---------------------------------------------------------------------------
-var PAGE_TITLES = { anasayfa:'Anasayfa', urunler:'Ürünler', receteler:'Reçeteler', spesifikasyonlar:'Spesifikasyonlar', alerjen:'Alerjen Matrisi' };
+var PAGE_TITLES = { anasayfa:'Anasayfa', urunler:'Ürünler', receteler:'Reçeteler', spesifikasyonlar:'Spesifikasyonlar', alerjen:'Alerjen Matrisi', sertifikalar:'Sertifikalar' };
 document.getElementById('snav').addEventListener('click', function(e){
   var head = e.target.closest('.nav-group-head');
   if(head){ head.parentElement.classList.toggle('collapsed'); return; }
@@ -511,6 +525,7 @@ function render(){
   else if(curView === 'receteler') c.innerHTML = renderReceteler();
   else if(curView === 'spesifikasyonlar') c.innerHTML = renderSpesifikasyonlar();
   else if(curView === 'alerjen') c.innerHTML = renderAlerjenMatrisi();
+  else if(curView === 'sertifikalar') c.innerHTML = renderSertifikalar();
   wireView();
 }
 function wireView(){
@@ -519,6 +534,9 @@ function wireView(){
   document.querySelectorAll('[data-recetegoster]').forEach(function(b){ b.onclick=function(){ openReceteDetay(b.dataset.recetegoster); }; });
   document.querySelectorAll('[data-specgoster]').forEach(function(b){ b.onclick=function(){ openSpecDetay(b.dataset.specgoster); }; });
   document.querySelectorAll('[data-specyeni]').forEach(function(b){ b.onclick=function(){ openSpecDetay(null, b.dataset.specyeni); }; });
+  document.querySelectorAll('[data-sertduzenle]').forEach(function(b){ b.onclick=function(){ openSertForm(b.dataset.sertduzenle); }; });
+  document.querySelectorAll('[data-sertsil]').forEach(function(b){ b.onclick=function(){ sertSil(b.dataset.sertsil); }; });
+  document.querySelectorAll('[data-sertyeni]').forEach(function(b){ b.onclick=function(){ openSertForm(null, b.dataset.sertyeni); }; });
 }
 
 // ---------------------------------------------------------------------------
@@ -646,6 +664,7 @@ function openReceteDetay(urunId){
       +'<td>'+(i+1)+'</td>'
       +'<td>'+esc(r.hammadde_adi)+'</td>'
       +'<td>'+(r.oran_yuzde!=null?fmt(r.oran_yuzde)+'%':'—')+'</td>'
+      +'<td>'+(esc(r.tedarikci_adi)||'<span class="muted">—</span>')+'</td>'
       +'<td>'+((r.alerjenler||[]).length?r.alerjenler.map(function(a){return '<span class="pill warn" style="margin-right:3px;font-size:10px">'+esc(a)+'</span>';}).join(''):'<span class="muted">—</span>')+'</td>'
       +'<td>'+(ce?'<button class="btn btn-line btn-sm" onclick="openReceteKalemForm(\''+urunId+'\',\''+r.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="receteKalemSil(\''+r.id+'\',\''+urunId+'\')">🗑</button>':'')+'</td>'
       +'</tr>';
@@ -654,7 +673,7 @@ function openReceteDetay(urunId){
     +'<div class="mb">'
     +(ce?'<button class="btn btn-line btn-sm" onclick="openReceteKalemForm(\''+urunId+'\')" style="justify-self:start">+ Hammadde Ekle</button>':'')
     +'<div class="tbl-wrap" style="overflow-x:auto">'
-    +(rows?'<table><thead><tr><th>#</th><th>Hammadde</th><th>Oran</th><th>Alerjenler</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +(rows?'<table><thead><tr><th>#</th><th>Hammadde</th><th>Oran</th><th>Tedarikçi</th><th>Alerjenler</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
       :'<div class="empty">Bu ürün için henüz hammadde girilmedi.</div>')
     +'</div>'
     +(kalemler.length?'<div style="text-align:right;font-size:12px" class="muted">Toplam: '+fmt(kalemler.reduce(function(s,r){return s+(Number(r.oran_yuzde)||0);},0))+'%</div>':'')
@@ -672,6 +691,7 @@ function openReceteKalemForm(urunId, kalemId){
     +'<div class="mb">'
     +'<div class="grid2"><div><label>Hammadde Adı *</label><input id="rkAd" value="'+esc(k?k.hammadde_adi:'')+'"></div>'
     +'<div><label>Oran (%)</label><input id="rkOran" type="number" step="0.01" min="0" max="100" value="'+(k&&k.oran_yuzde!=null?k.oran_yuzde:'')+'"></div></div>'
+    +'<div><label>Tedarikçi (opsiyonel — bilgi amaçlı, portal/giriş yok)</label><input id="rkTedarikci" value="'+esc(k?k.tedarikci_adi:'')+'"></div>'
     +'<div><label>Not (opsiyonel)</label><input id="rkNot" value="'+esc(k?k.notlar:'')+'"></div>'
     +'<div><label>İçerdiği Alerjenler (varsa)</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">'+alerjenChecks+'</div></div>'
     +'<div class="login-err" id="rkHata"></div>'
@@ -682,7 +702,7 @@ async function receteKalemKaydet(urunId, kalemId){
   if(!ad){ e.textContent='Hammadde adı zorunludur.'; return; }
   var alerjenler = Array.prototype.map.call(document.querySelectorAll('.recAlerjenChk:checked'), function(c){return c.value;});
   var mevcut = receteOf(urunId);
-  var rec = { urun_id:urunId, hammadde_adi:ad, oran_yuzde:numOrNull('rkOran'), notlar:val('rkNot').trim(), alerjenler:alerjenler };
+  var rec = { urun_id:urunId, hammadde_adi:ad, oran_yuzde:numOrNull('rkOran'), tedarikci_adi:val('rkTedarikci').trim(), notlar:val('rkNot').trim(), alerjenler:alerjenler };
   try{
     var r = kalemId ? await sb.from('urun_receteler').update(rec).eq('id',kalemId)
                     : await sb.from('urun_receteler').insert(Object.assign({kk:'REC-'+Date.now().toString(36), sira_no:mevcut.length}, rec));
@@ -730,8 +750,19 @@ function specFormAlanlari(s){
     enerji_kcal:s.enerji_kcal, yag_g:s.yag_g, doymus_yag_g:s.doymus_yag_g, karbonhidrat_g:s.karbonhidrat_g,
     seker_g:s.seker_g, protein_g:s.protein_g, tuz_g:s.tuz_g, trans_yag_g:s.trans_yag_g,
     fiziksel_kimyasal_limitler:s.fiziksel_kimyasal_limitler||'', mikrobiyolojik_limitler:s.mikrobiyolojik_limitler||'',
-    duyusal_kriterler:s.duyusal_kriterler||'', ambalaj_spesifikasyonu:s.ambalaj_spesifikasyonu||'', raf_omru_ay:s.raf_omru_ay
+    duyusal_kriterler:s.duyusal_kriterler||'', ambalaj_spesifikasyonu:s.ambalaj_spesifikasyonu||'', raf_omru_ay:s.raf_omru_ay,
+    onaylayan_rol:s.onaylayan_rol||'', ozel_alanlar:s.ozel_alanlar||[]
   };
+}
+function ozelAlanSatiriHtml(ad, deger){
+  return '<div class="grid2 ozelAlanRow" style="margin-bottom:4px">'
+    +'<input class="oaAd" placeholder="Alan adı (ör. Glüten Testi Yöntemi)" value="'+esc(ad||'')+'">'
+    +'<div style="display:flex;gap:6px"><input class="oaDeger" placeholder="Değer" value="'+esc(deger||'')+'" style="flex:1">'
+    +'<button type="button" class="x" onclick="this.closest(\'.ozelAlanRow\').remove()" title="Kaldır">&times;</button></div></div>';
+}
+function ozelAlanEkle(){
+  var c = document.getElementById('ozelAlanlarWrap'); if(!c) return;
+  c.insertAdjacentHTML('beforeend', ozelAlanSatiriHtml('',''));
 }
 var AI_BESIN_SONUC = null;
 function openSpecDetay(specId, urunIdForNew){
@@ -790,13 +821,19 @@ function openSpecDetay(specId, urunIdForNew){
     +'<div><label>Duyusal Kriterler</label><textarea id="spDuyusal" rows="2">'+esc(f.duyusal_kriterler)+'</textarea></div>'
     +'<div><label>Ambalaj Spesifikasyonu</label><textarea id="spAmbalaj" rows="2">'+esc(f.ambalaj_spesifikasyonu)+'</textarea></div>'
 
-    +(ce?'<div class="sec-h">Kaydet</div><div><label>Bu kaydetmede ne değişti? (opsiyonel not)</label><input id="spKaydetmeNotu" placeholder="ör. Beslenme bildirimi laboratuvar sonucuna göre güncellendi"></div>':'')
+    +'<div class="sec-h">Özel Alanlar <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ürün kategorisine göre ek bilgi — ör. raf ömrü testi, özel müşteri şartı)</span></div>'
+    +'<div id="ozelAlanlarWrap">'+(f.ozel_alanlar.length?f.ozel_alanlar.map(function(oa){return ozelAlanSatiriHtml(oa.ad, oa.deger);}).join(''):'')+'</div>'
+    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="ozelAlanEkle()">+ Özel Alan Ekle</button>':'')
+
+    +(s&&s.durum==='Onaylı'?('<div class="sec-h">Onay Bilgisi</div><div class="note">'+esc(s.onaylayan_ad||'—')+(s.onaylayan_rol?' — '+esc(s.onaylayan_rol):'')+' tarafından '+(s.onay_tarihi?new Date(s.onay_tarihi).toLocaleString('tr-TR'):'—')+' tarihinde onaylandı.</div>'):'')
+    +(ce?'<div class="sec-h">Kaydet</div><div><label>Onaylayan Unvanı <span class="muted">(Onayla ve Kaydet\'e basarken zorunlu — ör. Kalite Müdürü, Ar-Ge Sorumlusu)</span></label><input id="spOnayRol" value="'+esc(f.onaylayan_rol)+'" placeholder="ör. Kalite Müdürü"></div>'
+      +'<div><label>Bu kaydetmede ne değişti? (opsiyonel not)</label><input id="spKaydetmeNotu" placeholder="ör. Beslenme bildirimi laboratuvar sonucuna göre güncellendi"></div>':'')
     +'<div class="login-err" id="spHata"></div>'
 
     +'<div class="sec-h">Versiyon Geçmişi</div>'+verHtml
     +'</div><div class="mf">'
     +'<button class="btn btn-line" onclick="closeModal()">Kapat</button>'
-    +(s?'<button class="btn btn-line" onclick="specYazdir(\''+s.id+'\')">🖨 PDF / Yazdır</button>':'')
+    +(s?'<button class="btn btn-line" onclick="specYazdir(\''+s.id+'\')">🖨 PDF / Yazdır</button> <button class="btn btn-line" onclick="etiketMetniGoster(\''+s.id+'\')">🏷 Etiket Metni</button>':'')
     +(ce?('<button class="btn btn-line" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Taslak\')">Taslak Olarak Kaydet</button>'
         +'<button class="btn btn-leaf" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Onaylı\')">Onayla ve Kaydet</button>'):'')
     +'</div>');
@@ -841,9 +878,13 @@ async function specKaydet(specId, urunId, durum){
     karbonhidrat_g:numOrNull('spKarbon'), seker_g:numOrNull('spSeker'), protein_g:numOrNull('spProtein'), tuz_g:numOrNull('spTuz'),
     fiziksel_kimyasal_limitler:val('spFizKim').trim(), mikrobiyolojik_limitler:val('spMikro').trim(),
     duyusal_kriterler:val('spDuyusal').trim(), ambalaj_spesifikasyonu:val('spAmbalaj').trim(),
-    durum:durum, kaydetme_notu:(val('spKaydetmeNotu')||'').trim()
+    ozel_alanlar:Array.prototype.map.call(document.querySelectorAll('.ozelAlanRow'), function(row){
+      return { ad:row.querySelector('.oaAd').value.trim(), deger:row.querySelector('.oaDeger').value.trim() };
+    }).filter(function(oa){return oa.ad;}),
+    durum:durum, onaylayan_rol:(val('spOnayRol')||'').trim(), kaydetme_notu:(val('spKaydetmeNotu')||'').trim()
   };
   if(!rec.gida_adi){ e.textContent='Gıdanın adı zorunludur.'; return; }
+  if(durum==='Onaylı' && !rec.onaylayan_rol){ e.textContent='Onaylamak için "Onaylayan Unvanı" alanı zorunludur.'; return; }
   try{
     var r = specId ? await sb.from('urun_spesifikasyonlari').update(rec).eq('id',specId)
                    : await sb.from('urun_spesifikasyonlari').insert(Object.assign({kk:'SPC-'+Date.now().toString(36)}, rec)).select().maybeSingle();
@@ -858,7 +899,7 @@ function specYazdir(specId){
   var html = '<div class="mh"><b>Spesifikasyon — Yazdırma Görünümü</b><button class="x" onclick="closeModal()">&times;</button></div>'
     +'<div class="mb"><div class="rep-inner">'
     +'<h2>'+esc(s.gida_adi||u.ad)+'</h2>'
-    +'<div class="rep-sub">Spec Kodu: '+esc(s.spec_kodu)+' · Versiyon: v'+s.versiyon_no+' · Durum: '+esc(s.durum)+(s.onaylayan_ad?(' · Onaylayan: '+esc(s.onaylayan_ad)):'')+'</div>'
+    +'<div class="rep-sub">Spec Kodu: '+esc(s.spec_kodu)+' · Versiyon: v'+s.versiyon_no+' · Durum: '+esc(s.durum)+(s.onaylayan_ad?(' · Onaylayan: '+esc(s.onaylayan_ad)+(s.onaylayan_rol?' ('+esc(s.onaylayan_rol)+')':'')):'')+'</div>'
     +'<table><tr><th colspan="2">TGK Madde 9 — Zorunlu Bilgiler</th></tr>'
     +'<tr><td>Net Miktar</td><td>'+esc(s.net_miktar||'—')+'</td></tr>'
     +'<tr><td>Tavsiye/Son Tüketim</td><td>'+esc(s.tavsiye_son_tuketim||'—')+'</td></tr>'
@@ -880,9 +921,50 @@ function specYazdir(specId){
     +'<table><tr><th colspan="2">Reçete (İçindekiler, azalan ağırlık sırasıyla)</th></tr>'
     +receteOf(s.urun_id).map(function(r){return '<tr><td>'+esc(r.hammadde_adi)+'</td><td>'+(r.oran_yuzde!=null?fmt(r.oran_yuzde)+'%':'—')+'</td></tr>';}).join('')
     +'</table>'
+    +((s.ozel_alanlar&&s.ozel_alanlar.length)?('<table><tr><th colspan="2">Özel Alanlar</th></tr>'
+      +s.ozel_alanlar.map(function(oa){return '<tr><td>'+esc(oa.ad)+'</td><td>'+esc(oa.deger)+'</td></tr>';}).join('')+'</table>'):'')
     +'<div style="margin-top:16px; font-size:11px; color:#5D7238">Bu belge '+new Date().toLocaleDateString('tr-TR')+' tarihinde QDataLine Reçete ve Spesifikasyon Yönetimi\'nden alınmıştır — v'+s.versiyon_no+'.</div>'
     +'</div></div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Kapat</button><button class="btn btn-leaf" onclick="window.print()">🖨 Yazdır</button></div>';
   openModal(html);
+}
+
+// ---------------------------------------------------------------------------
+// ETİKET METNİ — spesifikasyon + reçete verisinden TGK'ya uygun ambalaj metni
+// türetilir (alerjenler BÜYÜK HARF vurgulu). Ayrı veri girişi/DB alanı YOK.
+// ---------------------------------------------------------------------------
+function etiketMetniGoster(specId){
+  var s = state.specler.find(function(x){return x.id===specId;});
+  var u = state.urunler.find(function(x){return x.id===s.urun_id;});
+  var kalemler = receteOf(s.urun_id);
+  var alerjenler = urunAlerjenleri(s.urun_id);
+  var icindekiler = kalemler.map(function(r){
+    var vurgu = (r.alerjenler||[]).length>0;
+    return vurgu ? ('<b>'+esc(r.hammadde_adi.toUpperCase())+'</b>') : esc(r.hammadde_adi);
+  }).join(', ');
+  var besin = ['Enerji: '+fmt(s.enerji_kcal)+' kcal','Yağ: '+fmt(s.yag_g)+' g','Doymuş Yağ: '+fmt(s.doymus_yag_g)+' g',
+    'Karbonhidrat: '+fmt(s.karbonhidrat_g)+' g','Şeker: '+fmt(s.seker_g)+' g','Protein: '+fmt(s.protein_g)+' g','Tuz: '+fmt(s.tuz_g)+' g'].join(' · ');
+  var metin = ''
+    +'<p><b>'+esc(s.gida_adi||u.ad)+'</b></p>'
+    +'<p><b>İçindekiler:</b> '+(icindekiler||'—')+'.</p>'
+    +'<p><b>Alerjen Uyarısı:</b> '+(alerjenler.length?('Şunları içerir: '+esc(alerjenler.join(', ').toUpperCase())+'.'):'Bilinen bir alerjen içermez.')+(s.capraz_bulasma_riski?(' '+esc(s.capraz_bulasma_riski)):'')+'</p>'
+    +'<p><b>Net Miktar:</b> '+esc(s.net_miktar||'—')+'</p>'
+    +'<p><b>Beslenme Bildirimi (100 g/ml):</b> '+besin+'</p>'
+    +'<p><b>Muhafaza Koşulları:</b> '+esc(s.muhafaza_kosullari||'—')+'</p>'
+    +'<p><b>Tavsiye Edilen/Son Tüketim Tarihi:</b> '+esc(s.tavsiye_son_tuketim||'—')+'</p>'
+    +'<p><b>Menşei Ülke:</b> '+esc(s.mensei_ulke||'—')+'</p>'
+    +'<p><b>Üretici:</b> '+esc(s.isletme_adi_adres||'—')+(s.isletme_kayit_no?(' — Kayıt No: '+esc(s.isletme_kayit_no)):'')+'</p>'
+    +(s.kullanim_talimati?('<p><b>Kullanım Talimatı:</b> '+esc(s.kullanim_talimati)+'</p>'):'');
+  openModal('<div class="mh"><b>Etiket Metni — '+esc(u.ad)+'</b><button class="x" onclick="closeModal()">&times;</button></div>'
+    +'<div class="mb"><div class="note">Bu metin spesifikasyon verisinden otomatik türetilmiştir — ambalaja basmadan önce mutlaka gözden geçirin ve resmi tasarım/baskı sürecinize uyarlayın.</div>'
+    +'<div class="rep-inner" id="etiketMetniIcerik" style="font-size:13px; line-height:1.7">'+metin+'</div></div>'
+    +'<div class="mf"><button class="btn btn-line" onclick="closeModal()">Kapat</button><button class="btn btn-line" onclick="etiketMetniKopyala()">📋 Metni Kopyala</button><button class="btn btn-leaf" onclick="window.print()">🖨 Yazdır</button></div>');
+}
+function etiketMetniKopyala(){
+  var el = document.getElementById('etiketMetniIcerik'); if(!el) return;
+  var metin = el.innerText;
+  try{
+    navigator.clipboard.writeText(metin);
+  }catch(e){}
 }
 
 // ---------------------------------------------------------------------------
@@ -903,6 +985,74 @@ function renderAlerjenMatrisi(){
     +'<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +'<table><thead><tr>'+head+'</tr></thead><tbody>'+rows+'</tbody></table>'
     +'</div></div></div>';
+}
+
+// ---------------------------------------------------------------------------
+// SERTİFİKALAR — ürün bazında Helal/Organik/BRCGS/IFS/Kosher geçerlilik takibi
+// ---------------------------------------------------------------------------
+function renderSertifikalar(){
+  var rows = state.sertifikalar.map(function(s){
+    var durum = sertDurum(s);
+    var pillCls = durum==='Geçerli'?'ok':(durum==='Süresi Yaklaşıyor'?'warn':'crit');
+    return '<tr>'
+      +'<td><b>'+esc(urunAdi(s.urun_id))+'</b></td>'
+      +'<td>'+esc(s.sertifika_turu)+'</td>'
+      +'<td>'+(esc(s.sertifika_no)||'—')+'</td>'
+      +'<td>'+(esc(s.veren_kurum)||'—')+'</td>'
+      +'<td>'+(s.gecerlilik_bitis?new Date(s.gecerlilik_bitis).toLocaleDateString('tr-TR'):'<span class="muted">Süresiz</span>')+'</td>'
+      +'<td><span class="pill '+pillCls+'">'+esc(durum)+'</span></td>'
+      +'<td style="white-space:nowrap">'+(canEdit()?'<button class="btn btn-line btn-sm" data-sertduzenle="'+s.id+'">✏️</button> <button class="btn btn-danger btn-sm" data-sertsil="'+s.id+'">🗑</button>':'')+'</td>'
+      +'</tr>';
+  }).join('');
+  var urunSecenekleri = state.urunler.filter(function(u){return u.durum==='Aktif';})
+    .map(function(u){return '<option value="'+u.id+'">'+esc(u.ad)+'</option>';}).join('');
+  return '<div class="toolbar">'+(canEdit()?('<select id="sertUrunSec" style="min-width:220px">'+(urunSecenekleri||'<option value="">Önce bir ürün ekleyin</option>')+'</select>'
+    +'<button class="btn btn-leaf" onclick="openSertForm(null, document.getElementById(\'sertUrunSec\').value)">+ Sertifika Ekle</button>'):'')+'</div>'
+    +'<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
+    +(rows?'<table><thead><tr><th>Ürün</th><th>Tür</th><th>Sertifika No</th><th>Veren Kurum</th><th>Geçerlilik Bitiş</th><th>Durum</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+      :'<div class="empty">Henüz sertifika eklenmedi.</div>')
+    +'</div></div></div>';
+}
+var SERT_TURLERI = ['Helal','Organik','BRCGS','IFS','Kosher','ISO 22000','Diğer'];
+function openSertForm(sertId, urunIdForNew){
+  var s = sertId ? state.sertifikalar.find(function(x){return x.id===sertId;}) : null;
+  var urunId = s ? s.urun_id : urunIdForNew;
+  var u = state.urunler.find(function(x){return x.id===urunId;});
+  var turSecenekleri = SERT_TURLERI.map(function(t2){return '<option'+(s&&s.sertifika_turu===t2?' selected':'')+'>'+t2+'</option>';}).join('');
+  openModal('<div class="mh"><b>'+(s?'Sertifikayı Düzenle':'Sertifika Ekle')+' · '+esc(u?u.ad:'')+'</b><button class="x" onclick="closeModal()">&times;</button></div>'
+    +'<div class="mb">'
+    +'<div class="grid2"><div><label>Sertifika Türü</label><select id="stTur">'+turSecenekleri+'</select></div>'
+    +'<div><label>Sertifika No</label><input id="stNo" value="'+esc(s?s.sertifika_no:'')+'"></div></div>'
+    +'<div><label>Veren Kurum</label><input id="stKurum" value="'+esc(s?s.veren_kurum:'')+'"></div>'
+    +'<div class="grid2"><div><label>Geçerlilik Başlangıç</label><input id="stBaslangic" type="date" value="'+(s&&s.gecerlilik_baslangic?s.gecerlilik_baslangic:'')+'"></div>'
+    +'<div><label>Geçerlilik Bitiş <span class="muted">(boş = süresiz)</span></label><input id="stBitis" type="date" value="'+(s&&s.gecerlilik_bitis?s.gecerlilik_bitis:'')+'"></div></div>'
+    +'<div><label>Belge Bağlantısı (opsiyonel)</label><input id="stDosya" value="'+esc(s?s.dosya_url:'')+'" placeholder="https://..."></div>'
+    +'<div><label>Not</label><textarea id="stNot" rows="2">'+esc(s?s.notlar:'')+'</textarea></div>'
+    +'<div class="login-err" id="stHata"></div>'
+    +'</div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Vazgeç</button><button class="btn btn-leaf" onclick="sertKaydet(\''+(sertId||'')+'\',\''+(urunId||'')+'\')">Kaydet</button></div>');
+}
+async function sertKaydet(sertId, urunId){
+  var e = document.getElementById('stHata');
+  if(!urunId){ e.textContent='Önce bir ürün seçmelisiniz.'; return; }
+  var rec = {
+    urun_id:urunId, sertifika_turu:val('stTur'), sertifika_no:val('stNo').trim(), veren_kurum:val('stKurum').trim(),
+    gecerlilik_baslangic: val('stBaslangic')||null, gecerlilik_bitis: val('stBitis')||null,
+    dosya_url:val('stDosya').trim(), notlar:val('stNot').trim()
+  };
+  try{
+    var r = sertId ? await sb.from('urun_sertifikalari').update(rec).eq('id',sertId)
+                   : await sb.from('urun_sertifikalari').insert(Object.assign({kk:'SERT-'+Date.now().toString(36)}, rec));
+    if(r.error) throw r.error;
+    await loadAll(); closeModal(); render(); buildNav();
+  }catch(x){ e.textContent=ursHata(x); }
+}
+async function sertSil(sertId){
+  if(!confirm('Bu sertifika kaydı silinsin mi?')) return;
+  try{
+    var r = await sb.from('urun_sertifikalari').update({deleted_at:new Date().toISOString()}).eq('id',sertId);
+    if(r.error) throw r.error;
+    await loadAll(); render(); buildNav();
+  }catch(x){ alert(ursHata(x)); }
 }
 
 // ---------------------------------------------------------------------------
