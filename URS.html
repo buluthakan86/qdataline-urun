@@ -440,8 +440,8 @@ async function afterLogin(user){
   var { data: yetki } = await sb.rpc('has_modul', { p_modul: MODUL_KODU });
   if(!yetki){ document.getElementById('loErr').textContent = 'Bu modüle (Reçete ve Spesifikasyon Yönetimi) erişim yetkiniz yok.'; return; }
   document.getElementById('cloudUserLbl').textContent = prof.full_name || user.email;
-  try{ await loadAll(); }catch(e){ document.getElementById('loErr').textContent = ursHata(e); return; }
   buildNav();
+  try{ await loadAll(); }catch(e){ document.getElementById('loErr').textContent = ursHata(e); return; }
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appRoot').classList.remove('hidden');
   showView('anasayfa');
