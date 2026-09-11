@@ -65,6 +65,8 @@ button,.btn{font-family:inherit; font-size:12.5px; font-weight:600; border-radiu
 .btn-danger{background:var(--crit-bg); color:var(--crit); border-color:transparent}
 input,select,textarea{font-family:inherit; font-size:13px; background:var(--mint-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:8px 10px}
 input:focus,select:focus,textarea:focus{outline:none; border-color:var(--leaf)}
+textarea{min-height:clamp(64px, 11vh, 150px); resize:vertical; line-height:1.5}
+textarea.ta-lg{min-height:clamp(90px, 16vh, 220px)}
 label{font-size:12px; color:var(--muted); font-weight:600; display:block; margin-bottom:4px}
 
 .app{display:flex; min-height:100vh}
@@ -124,6 +126,7 @@ tr:hover td{background:var(--mint-2)}
 
 .overlay{position:fixed; inset:0; background:rgba(10,4,9,.68); display:flex; align-items:center; justify-content:center; z-index:200; padding:20px}
 .modal{background:var(--card); border-radius:14px; width:100%; max-width:720px; max-height:88vh; overflow:auto; box-shadow:0 24px 60px rgba(0,0,0,.6); animation:pop .18s ease}
+.modal.modal-genis{max-width:min(980px, 94vw)}
 @keyframes pop{from{opacity:0; transform:scale(.97)} to{opacity:1; transform:none}}
 .modal .mh{padding:16px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between}
 .modal .mb{padding:18px 20px; display:grid; gap:12px}
@@ -1119,7 +1122,7 @@ function openSpecDetay(specId, urunIdForNew){
     +(s?'<button class="btn btn-line" onclick="specYazdir(\''+s.id+'\')">🖨 PDF / Yazdır</button> <button class="btn btn-line" onclick="etiketMetniGoster(\''+s.id+'\')">🏷 Etiket Metni</button>':'')
     +(ce?('<button class="btn btn-line" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Taslak\')">Taslak Olarak Kaydet</button>'
         +'<button class="btn btn-leaf" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Onaylı\')">Onayla ve Kaydet</button>'):'')
-    +'</div>');
+    +'</div>', true);
   SPEC_GORSEL_YOLLARI = (f.gorsel_yollari||[]).slice();
   gorselleriYukle(SPEC_GORSEL_YOLLARI);
 }
@@ -1453,8 +1456,10 @@ async function firmaKaydet(){
 // ---------------------------------------------------------------------------
 // MODAL YARDIMCILARI
 // ---------------------------------------------------------------------------
-function openModal(html){
-  document.getElementById('modalBody').innerHTML = html;
+function openModal(html, genis){
+  var mb = document.getElementById('modalBody');
+  mb.innerHTML = html;
+  mb.classList.toggle('modal-genis', !!genis);
   document.getElementById('overlay').classList.remove('hidden');
   wireView();
 }
