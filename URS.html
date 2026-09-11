@@ -867,6 +867,7 @@ function specFormAlanlari(s){
     gramaj_secenekleri:s.gramaj_secenekleri||[],
     ambalaj_secenekleri:s.ambalaj_secenekleri||[],
     gorsel_yollari:s.gorsel_yollari||[],
+    musteri_spesifikasyonlari:s.musteri_spesifikasyonlari||[],
     sonraki_inceleme_tarihi:s.sonraki_inceleme_tarihi||null
   };
 }
@@ -1019,6 +1020,66 @@ async function gorselleriYukle(mevcutYollar){
     }catch(e){}
   }
 }
+
+// ---------------------------------------------------------------------------
+// Müşteri Spesifikasyonları — müşterinin gönderdiği PDF/Word/Excel gibi
+// dosyaların spesifikasyona eklenmesi. Aynı 'urun-belgeler' bucket'ı,
+// 'musteri-spec/' yol öneki kullanılıyor.
+// ---------------------------------------------------------------------------
+var MUSTERI_SPEC_DOSYALARI = [];
+function musteriSpecSatiriHtml(d){
+  d = d||{};
+  return '<div class="musteriSpecRow" data-yol="'+esc(d.yol||'')+'" style="display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line-2)">'
+    +'<span style="font-size:16px">📄</span>'
+    +'<a href="#" class="ek-link musteriSpecIndir" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">'+esc(d.ad||d.yol||'Dosya')+'</a>'
+    +'<input class="musteriSpecAciklama" placeholder="Açıklama (ops.)" value="'+esc(d.aciklama||'')+'" style="max-width:220px; font-size:11.5px; padding:5px 8px">'
+    +'<button type="button" class="x" onclick="musteriSpecSil(this)" title="Kaldır">&times;</button></div>';
+}
+function musteriSpecSil(btn){
+  var row = btn.closest('.musteriSpecRow');
+  var yol = row.dataset.yol;
+  MUSTERI_SPEC_DOSYALARI = MUSTERI_SPEC_DOSYALARI.filter(function(d){ return d.yol!==yol; });
+  row.remove();
+}
+async function musteriSpecIndir(a, yol){
+  a.preventDefault ? null : null;
+  try{
+    var signed = await sb.storage.from('urun-belgeler').createSignedUrl(yol, 300);
+    if(signed.data) window.open(signed.data.signedUrl, '_blank');
+  }catch(e){ alert('Dosya açılamadı.'); }
+}
+async function musteriSpecYukle(urunId){
+  var input = document.getElementById('spMusteriSpecInput');
+  var msj = document.getElementById('spMusteriSpecMsj');
+  var files = input.files;
+  if(!files || !files.length) return;
+  msj.textContent = 'Yükleniyor…';
+  try{
+    for(var i=0;i<files.length;i++){
+      var f = files[i];
+      var yol = cloudTenantId+'/musteri-spec/'+urunId+'/'+Date.now()+'-'+i+'-'+f.name.replace(/[^a-zA-Z0-9.\-_]/g,'_');
+      var up = await sb.storage.from('urun-belgeler').upload(yol, f);
+      if(up.error) throw up.error;
+      var kayit = { yol:yol, ad:f.name, aciklama:'' };
+      MUSTERI_SPEC_DOSYALARI.push(kayit);
+      document.getElementById('musteriSpecWrap').insertAdjacentHTML('beforeend', musteriSpecSatiriHtml(kayit));
+    }
+    msj.textContent = '';
+    wireMusteriSpecLinkleri();
+  }catch(e){ msj.textContent = 'Yükleme başarısız: '+(e.message||e); }
+  input.value = '';
+}
+function wireMusteriSpecLinkleri(){
+  document.querySelectorAll('.musteriSpecIndir').forEach(function(a){
+    a.onclick = function(ev){ ev.preventDefault(); musteriSpecIndir(a, a.closest('.musteriSpecRow').dataset.yol); };
+  });
+}
+function musteriSpecleriGoster(mevcut){
+  var wrap = document.getElementById('musteriSpecWrap');
+  if(!wrap) return;
+  wrap.innerHTML = mevcut.map(musteriSpecSatiriHtml).join('');
+  wireMusteriSpecLinkleri();
+}
 var AI_BESIN_SONUC = null;
 function openSpecDetay(specId, urunIdForNew){
   var s = specId ? state.specler.find(function(x){return x.id===specId;}) : null;
@@ -1106,6 +1167,12 @@ function openSpecDetay(specId, urunIdForNew){
       +'<button type="button" class="btn btn-line btn-sm" onclick="gorselYukle(\''+urunId+'\')">Yükle</button>'
       +'<span id="spGorselMsj" class="muted" style="font-size:11.5px"></span></div>'):'')
 
+    +'<div class="sec-h">Müşteri Spesifikasyonları <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(müşterinin gönderdiği PDF/Word/Excel istek/spesifikasyon dosyaları)</span></div>'
+    +'<div id="musteriSpecWrap"></div>'
+    +(ce?('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="file" id="spMusteriSpecInput" multiple>'
+      +'<button type="button" class="btn btn-line btn-sm" onclick="musteriSpecYukle(\''+urunId+'\')">Yükle</button>'
+      +'<span id="spMusteriSpecMsj" class="muted" style="font-size:11.5px"></span></div>'):'')
+
     +'<div class="sec-h">Özel Alanlar <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ürün kategorisine göre ek bilgi — ör. raf ömrü testi, özel müşteri şartı)</span></div>'
     +'<div id="ozelAlanlarWrap">'+(f.ozel_alanlar.length?f.ozel_alanlar.map(function(oa){return ozelAlanSatiriHtml(oa.ad, oa.deger);}).join(''):'')+'</div>'
     +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="ozelAlanEkle()">+ Özel Alan Ekle</button>':'')
@@ -1125,6 +1192,8 @@ function openSpecDetay(specId, urunIdForNew){
     +'</div>', true);
   SPEC_GORSEL_YOLLARI = (f.gorsel_yollari||[]).slice();
   gorselleriYukle(SPEC_GORSEL_YOLLARI);
+  MUSTERI_SPEC_DOSYALARI = (f.musteri_spesifikasyonlari||[]).slice();
+  musteriSpecleriGoster(MUSTERI_SPEC_DOSYALARI);
 }
 function alerjenBeyaniDoldur(urunId){
   var alerjenler = urunAlerjenleri(urunId);
@@ -1183,6 +1252,10 @@ async function specKaydet(specId, urunId, durum){
     }).filter(function(g){return g.net_miktar;}),
     ambalaj_secenekleri: Array.prototype.map.call(document.querySelectorAll('.ambalajRow .amAd'), function(inp){ return inp.value.trim(); }).filter(Boolean),
     gorsel_yollari: SPEC_GORSEL_YOLLARI.slice(),
+    musteri_spesifikasyonlari: Array.prototype.map.call(document.querySelectorAll('.musteriSpecRow'), function(row){
+      var mevcut = MUSTERI_SPEC_DOSYALARI.find(function(d){return d.yol===row.dataset.yol;}) || {};
+      return { yol: row.dataset.yol, ad: mevcut.ad||row.dataset.yol, aciklama: row.querySelector('.musteriSpecAciklama').value.trim() };
+    }),
     durum:durum, onaylayan_rol:(val('spOnayRol')||'').trim(), kaydetme_notu:(val('spKaydetmeNotu')||'').trim()
   };
   if(!rec.gida_adi){ e.textContent='Gıdanın adı zorunludur.'; kilitAc(); return; }
@@ -1258,6 +1331,8 @@ async function specYazdir(specId){
     +'</table>'
     +((s.ozel_alanlar&&s.ozel_alanlar.length)?('<table><tr><th colspan="2">Özel Alanlar</th></tr>'
       +s.ozel_alanlar.map(function(oa){return '<tr><td>'+esc(oa.ad)+'</td><td>'+esc(oa.deger)+'</td></tr>';}).join('')+'</table>'):'')
+    +((s.musteri_spesifikasyonlari&&s.musteri_spesifikasyonlari.length)?('<table><tr><th colspan="2">Müşteri Spesifikasyonu Referans Dosyaları</th></tr>'
+      +s.musteri_spesifikasyonlari.map(function(d){return '<tr><td>'+esc(d.ad||'—')+'</td><td>'+esc(d.aciklama||'—')+'</td></tr>';}).join('')+'</table>'):'')
     +'<div style="margin-top:16px; font-size:11px; color:#5D7238">Bu belge '+new Date().toLocaleDateString('tr-TR')+' tarihinde QDataLine Reçete ve Spesifikasyon Yönetimi\'nden alınmıştır — v'+s.versiyon_no+'.</div>'
     +'</div></div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Kapat</button><button class="btn btn-leaf" onclick="window.print()">🖨 Yazdır</button></div>';
   openModal(html);
