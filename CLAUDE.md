@@ -38,6 +38,26 @@ uygulandı. SQL: `sql/05_rakip_analizi_ekleri.sql` (canlıda çalıştırıldı,
 doğrulandı. Playwright bu oturumda bağlanamadığı için tarayıcı testi
 YAPILAMADI — kullanıcının canlı test etmesi gerekiyor.
 
+**11.09.2026 — Backend uçtan uca doğrulama (Management API ile, gerçek tarayıcı
+girişi olmadan):** Playwright/chrome-devtools bağlanamadığı için tarayıcı
+tıklama testi yapılamadı, onun yerine gerçek tenant'ta (Deneme Firması) geçici
+test verisiyle backend mantığı uçtan uca doğrulandı, sonra TAMAMEN silindi:
+- Ürün + 3 reçete kalemi (tedarikçi adı + alerjen dahil) → doğru kaydedildi.
+- Spesifikasyon oluşturma → `spec_kodu` otomatik `SPEC-0001` üretildi.
+- Taslak→Onaylı geçişi (`onaylayan_rol='Kalite Müdürü'`) → `versiyon_no` 1→2,
+  `onay_tarihi` damgalandı, versiyon geçmişinde `neler_degisti`
+  ("Durum: Taslak → Onaylı. Kalite Müdürü unvanıyla onaylandı.") ve
+  `degisiklik_notu` doğru yazıldı.
+- Onaylı→Taslak geri dönüşü → `onaylayan_ad/onaylayan_rol/onay_tarihi` doğru
+  temizlendi, `versiyon_no` 3'e çıktı.
+- Süresi geçmiş sertifika kaydı (5 gün önce bitmiş) doğru eklendi.
+- (`onaylayan_ad` bu testte boş kaldı — beklenen, çünkü Management API
+  `postgres` rolüyle çalışıyor, `auth.uid()` NULL dönüyor; gerçek kullanıcı
+  girişinde `profiles.full_name`'den dolacak.)
+**Doğrulanamayan tek şey:** gerçek tarayıcıda buton tıklama/form doldurma
+deneyimi (CSS/JS DOM etkileşimi) — bu hâlâ kullanıcının kendi testini
+gerektiriyor, özellikle mobil responsive görünüm.
+
 ---
 
 ## 09.09.2026 — FAZ 1 KODLANDI, CANLI TEST BEKLİYOR
