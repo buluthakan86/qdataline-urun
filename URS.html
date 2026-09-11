@@ -627,6 +627,9 @@ function renderAnasayfa(){
   var onayliSpec = state.specler.filter(function(s){return s.durum==='Onaylı';}).length;
   var taslakSpec = state.specler.filter(function(s){return s.durum==='Taslak';}).length;
   var alerjenliUrunSayisi = state.urunler.filter(function(u){ return urunAlerjenleri(u.id).length>0; }).length;
+  var sertUyariSayisi = state.sertifikalar.filter(function(s){return sertDurum(s)!=='Geçerli';}).length;
+  var sertUyariSatirlar = state.sertifikalar.filter(function(s){return sertDurum(s)!=='Geçerli';})
+    .sort(function(a,b){ return (a.gecerlilik_bitis||'').localeCompare(b.gecerlilik_bitis||''); }).slice(0,6);
 
   var sonReceteliUrunIdler = Object.keys(receteliUrun).sort(function(a,b){
     var ra = state.receteler.filter(function(r){return r.urun_id===a;}).reduce(function(m,r){return r.updated_at>m?r.updated_at:m;},'');
@@ -650,7 +653,18 @@ function renderAnasayfa(){
     +'<div class="kpi"><div class="val" style="color:var(--ok)">'+onayliSpec+'</div><div class="lbl">Onaylı Spesifikasyon</div></div>'
     +'<div class="kpi"><div class="val" style="'+(taslakSpec?'color:var(--warn)':'')+'">'+taslakSpec+'</div><div class="lbl">Taslak Spesifikasyon</div></div>'
     +'<div class="kpi"><div class="val" style="'+(alerjenliUrunSayisi?'color:var(--crit)':'')+'">'+alerjenliUrunSayisi+'</div><div class="lbl">Alerjen İçeren Ürün</div></div>'
+    +'<div class="kpi"><div class="val" style="'+(sertUyariSayisi?'color:var(--crit)':'')+'">'+sertUyariSayisi+'</div><div class="lbl">Sertifika Uyarısı</div></div>'
     +'</div>'
+    +(sertUyariSatirlar.length?('<div class="panel"><div class="ph"><h2>⚠ Dikkat Gerektiren Sertifikalar</h2><span class="sp" style="flex:1"></span>'
+      +(canEdit()?'<button class="btn btn-line btn-sm" onclick="showView(\'sertifikalar\')">Tüm Sertifikalar →</button>':'')+'</div>'
+    +'<div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto"><table><thead><tr><th>Ürün</th><th>Tür</th><th>Geçerlilik Bitiş</th><th>Durum</th></tr></thead><tbody>'
+    +sertUyariSatirlar.map(function(s){
+      var d = sertDurum(s);
+      return '<tr class="clk" onclick="showView(\'sertifikalar\')" style="cursor:pointer"><td><b>'+esc(urunAdi(s.urun_id))+'</b></td><td>'+esc(s.sertifika_turu)+'</td>'
+        +'<td>'+(s.gecerlilik_bitis?new Date(s.gecerlilik_bitis).toLocaleDateString('tr-TR'):'—')+'</td>'
+        +'<td><span class="pill '+(d==='Süresi Doldu'?'crit':'warn')+'">'+esc(d)+'</span></td></tr>';
+    }).join('')
+    +'</tbody></table></div></div></div>'):'')
     +'<div class="panel"><div class="ph"><h2>Son Güncellenen Reçeteler</h2><span class="sp" style="flex:1"></span>'
       +(canEdit()?'<button class="btn btn-line btn-sm" onclick="showView(\'receteler\')">Tüm Reçeteler →</button>':'')+'</div>'
     +'<div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
