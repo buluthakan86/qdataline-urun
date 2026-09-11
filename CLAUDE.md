@@ -76,6 +76,34 @@ matrisi/sertifika uyarı paneli/onay akışının hepsinin gerçek örneklerle
 dolu görünmesi. **Bu veri TEST verisi değildir, silinmeyecektir** — gerçek
 kullanım öncesi kullanıcı isterse Ürünler ekranından kendisi kaldırabilir.
 
+### ⚠️ Bulunan gerçek eksik: demo hesaplarında `urun` yetkisi yoktu (11.09.2026)
+Kullanıcı "yönetici ve kullanıcı için oluşturduğumuz hesaplar bütün modüller
+için geçerli" dedi — kontrol edilince bu YANLIŞ çıktı: `demo.kullanici@
+qdataline.com` (EDITOR) ve `demo.yonetici@qdataline.com` (ADMIN), URS
+modülünden ÖNCE oluşturuldukları için `modul_yetki`'de `'urun'` satırı hiç
+yoktu. **Düzeltildi** — ikisine de `'urun'` yetkisi eklendi. Aynı 3 ürünlük
+demo veri seti (DEMO- önekli) bu hesapların kendi tenant'ına (`675ac400-...`,
+"Deneme Firması") da eklendi — buluthakan86@gmail.com'un tenant'ından
+(`11111111-...`) AYRI bir tenant, ikisi karıştırılmamalı.
+
+**Ders:** yeni bir modül canlıya alınırken hub kartı gibi, bu iki "genel
+demo hesabı"na modül yetkisi eklemek de AYRI, unutulması kolay bir adım —
+checklist'e eklenmeli (bkz. [[project_isg_yonetimi_modulu]]'daki "Ortak Demo
+Kullanıcı Hesapları" notu, aynı iki hesap orada da her modül eklendiğinde
+elle güncellenmesi gerektiği belirtilmişti).
+
+**Süreç doğrulaması (RLS ile, gerçek yetki simülasyonu):** `demo.kullanici`
+kimliğiyle (`set local request.jwt.claims`) reçete oluşturma, taslak
+spesifikasyon açma ve KENDİ oluşturduğu spesifikasyonu onaylama uçtan uca
+test edildi — hepsi başarılı, `onaylayan_ad` trigger'ı doğru şekilde
+`auth.uid()`'den `profiles.full_name`'i çekip "QDATALINE Demo Kullanıcı"
+yazdı (gerçek oturumda böyle çalışacağının kanıtı). Yetkisiz bir kullanıcı
+(`modul_yetki`'de kaydı olmayan) ile aynı işlem denendiğinde RLS doğru
+şekilde `42501` hatasıyla REDDETTİ — güvenlik ve işlevsellik ikisi de
+doğrulandı. Tüm test işlemleri `begin;`+`set local` içinde yapılıp hiç
+`commit` edilmedi (Management API'nin her çağrısı ayrı bağlantı olduğu için
+otomatik geri alınıyor) — gerçek veriye hiç dokunulmadı.
+
 ---
 
 ## 09.09.2026 — FAZ 1 KODLANDI, CANLI TEST BEKLİYOR
