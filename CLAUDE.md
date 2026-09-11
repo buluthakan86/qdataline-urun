@@ -2,6 +2,81 @@
 
 > **BU DOSYA PROJENİN TEK HAFIZASIDIR.** Yeni oturumda önce bu dosya okunmalı.
 
+## 11.09.2026 — FAZ 5: BÜYÜK KULLANICI GERİ BİLDİRİMİ TURU
+
+Kullanıcı canlı testte spesifikasyon oluşturmayı denedi, "aynı makarna spesifikasyonu
+3 kez oluştu, hata mı yoksa fazla mı tıkladım" diye sordu + uzun bir liste halinde
+10'dan fazla iyileştirme istedi. `sql/06_gelismis_spec_alanlari.sql` ve
+`sql/07_firma_bilgisi_ve_incele.sql` canlıda çalıştırıldı.
+
+### 🔴 Bulunan gerçek bug: çift-tıklama/çoklu-gönderim koruması YOKTU
+`urun_urunler` tablosunda 3 "Makarna" kaydı bulundu, `created_at` zaman damgaları
+birbirinden yalnızca **3 milisaniye** farklıydı — bu insan tepki hızıyla açıklanamaz,
+gerçek bir bug: hiçbir Kaydet butonunda çift-gönderim koruması yoktu, hızlı art arda
+tıklama (veya dokunmatik ekranda çift dokunma) eşzamanlı birden fazla INSERT
+isteği açabiliyordu. **Düzeltme:** global `_kayitKilit` bayrağı + `kilitliMi()`/
+`kilitAc()` yardımcıları eklendi, `urunKaydet`/`receteKalemKaydet`/`specKaydet`/
+`sertKaydet` fonksiyonlarının hepsine uygulandı — ikinci tıklama sessizce yok
+sayılıyor. Bu, platformun diğer modüllerinde de (BOY'da "çift tıklama koruması"
+notu var) bilinen bir tuzak — [[feedback_istemci_tarafi_kural_tuzagi]] ile aynı
+kategori.
+
+### Yapılan diğer değişiklikler
+1. **Fiziksel-Kimyasal / Mikrobiyolojik limitler** artık boş kutuya serbest yazı
+   değil, parametre/min/max/birim satırları (`fiziksel_kimyasal_parametreler`,
+   `mikrobiyolojik_parametreler` jsonb). Eski metin kolonu "Ek Not" olarak kaldı.
+2. **Duyusal Kriterler** varsayılan Tat/Koku/Doku/Görünüş 4 satırıyla geliyor,
+   her birine açıklama yazılabiliyor (`duyusal_kriterler_yapilandirilmis`).
+3. **Yasal Dayanaklar** — çoğaltılabilir mevzuat listesi + sık kullanılan TGK
+   yönetmelikleri için tek tıkla ekleme butonları (`yasal_dayanaklar`).
+4. **Gramaj/Palet Seçenekleri** — aynı ürünün farklı gramajları (ve her birinin
+   kendi palet ölçüsü/adedi) TEK spesifikasyon içinde listelenebiliyor
+   (`gramaj_secenekleri`) — kullanıcının "aynı ürünün farklı gramajı, farklı
+   palet miktarı" isteği.
+5. **Ambalaj Seçenekleri** — OPP-CPP, PE gibi birden fazla malzeme etiketi
+   (`ambalaj_secenekleri`), ayrıca boyut/katman detayı için serbest metin kaldı.
+6. **Ürün Görselleri** — yeni private Storage bucket `urun-belgeler` (İSG/BOY/MOC
+   ile aynı tenant-klasörlü RLS deseni), spesifikasyona çoklu görsel yükleme.
+7. **Ayarlar ekranı (yeni)** — firma adı/adres/logo/üst yönetici bilgisi
+   (`urun_firma_bilgileri`, tenant başına 1 satır). Logo Storage'a yükleniyor,
+   yol (imzalı URL değil) saklanıyor, görüntülenirken/PDF'te anlık imzalı URL
+   üretiliyor (imzalı URL'nin süresi dolmasın diye).
+8. **PDF/Yazdırma**: firma adı+logo üst bilgi (letterhead) olarak eklendi;
+   oluşturulma/son revizyon/sonraki inceleme tarihleri gösteriliyor; TGK
+   formatına uygun olarak Doymuş Yağ/Şeker/Trans Yağ artık "- " ile girintili
+   ALT KALEM olarak (Yağ/Karbonhidrat'ın altında) gösteriliyor; tüm yeni
+   yapılandırılmış bölümler (parametreler, duyusal, yasal dayanaklar, gramaj/
+   palet, ambalaj seçenekleri) PDF'e eklendi. **Ürün görselleri PDF'e
+   eklenmedi** (imzalı URL senkron HTML üretimiyle uyumsuz, bilinçli kapsam dışı).
+9. **Reçete ekranı**: her hammaddeye "Proses Talimatı" (hangi aşamada/nasıl
+   eklenir, sıvı/katı çözünme, karıştırma süresi) serbest metin alanı
+   (`proses_talimati`) + tabloda **"1 Ton İçin" otomatik kg hesaplaması**
+   (`oran_yüzde * 10` — %1 = 1000 kg ürün için 10 kg) eklendi.
+10. **Yıllık gözden geçirme tarihi** — spesifikasyon onaylanınca
+    `sonraki_inceleme_tarihi` otomatik onay_tarihi+365 gün olarak hesaplanıyor
+    (trigger), spec detayında ve PDF'te gösteriliyor. **BİLİNÇLİ KAPSAM DIŞI:**
+    bu tarihe göre üst yöneticiye OTOMATİK E-POSTA gönderimi bu turda
+    YAPILMADI — ayrı bir Edge Function + zamanlama (pg_cron veya benzeri)
+    gerektiriyor, platformun paylaşımlı Resend altyapısına
+    ([[project_otomatik_bildirim_resend]]) bağlanabilir. `urun_firma_bilgileri.
+    ust_yonetici_eposta` alanı bu iş için hazır bekliyor.
+
+### Backlog'a eklenen (henüz yapılmadı, kullanıcı "notlara ekle" dedi)
+- Reçete kalemi (katkı maddesi) eklerken doküman eki: spec/MSDS dosyası
+  yükleme, raf ömrü, alerjen durumu gibi temel bilgilerin doğrudan o katkının
+  kendi kaydında (ayrı bir "sertifikasyon/doküman" alt bölümü olarak)
+  tutulabilmesi. Şu an yalnız serbest metin `notlar` + checkbox alerjen var.
+
+### Test durumu
+`node --check` ile sözdizimi doğrulandı. Canlıda cache-busting ile yeni alanların
+(fkParamWrap/gramajWrap/yasalWrap/gorselWrap/firmaKaydet) varlığı doğrulandı.
+**Gerçek tarayıcı tıklama/form testi YAPILAMADI** (Playwright bağlanamadı) —
+kullanıcının canlı test etmesi hâlâ gerekiyor, özellikle: logo yükleme, ürün
+görseli yükleme, gramaj/parametre satırı ekleme/kaldırma, PDF çıktısının görsel
+doğruluğu.
+
+---
+
 ## 10.09.2026 — FAZ 2: RAKİP ANALİZİ SONRASI 4 ÖZELLİK EKLENDİ
 
 Apify google-search-scraper ile SoftSpec/Trustwell-FoodLogiQ/beCPG (BRCGS spec-
