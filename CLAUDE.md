@@ -58,6 +58,24 @@ test verisiyle backend mantığı uçtan uca doğrulandı, sonra TAMAMEN silindi
 deneyimi (CSS/JS DOM etkileşimi) — bu hâlâ kullanıcının kendi testini
 gerektiriyor, özellikle mobil responsive görünüm.
 
+### Demo veri (11.09.2026, kalıcı — silinmedi)
+Kullanıcı isteğiyle "Deneme Firması" tenant'ına 3 gerçekçi kurgusal ürün +
+tam reçete + spesifikasyon + sertifika eklendi (`kk` önekleri `DEMO-`):
+- **Ev Tipi Ekmek Unu Karışımı** — 6 hammaddeli reçete (gluten alerjeni),
+  Onaylı spesifikasyon (SPEC-0001, onaylayan "Ayşe Yılmaz — Kalite Müdürü"),
+  2 sertifika (BRCGS geçerli, Helal süresi yaklaşıyor — ~20 gün).
+- **Bitkisel Süt İçeceği (Badem)** — 5 hammaddeli reçete (sert kabuklu meyve
+  alerjeni), Onaylı spesifikasyon (SPEC-0002), 2 sertifika (Organik süresi
+  bu ay doluyor ~9 gün, ISO 22000 geçerli).
+- **Klasik Domates Sosu** — 6 hammaddeli reçete (alerjensiz), Taslak
+  spesifikasyon (SPEC-0003, onaysız) — onay akışının denenmesi için
+  bilinçli olarak Taslak bırakıldı.
+
+Amaç: kullanıcının modülü ilk açtığında boş ekranlarla değil, alerjen
+matrisi/sertifika uyarı paneli/onay akışının hepsinin gerçek örneklerle
+dolu görünmesi. **Bu veri TEST verisi değildir, silinmeyecektir** — gerçek
+kullanım öncesi kullanıcı isterse Ürünler ekranından kendisi kaldırabilir.
+
 ---
 
 ## 09.09.2026 — FAZ 1 KODLANDI, CANLI TEST BEKLİYOR
