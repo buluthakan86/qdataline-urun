@@ -1468,7 +1468,11 @@ function closeModal(){
   document.getElementById('modalBody').innerHTML = '';
 }
 document.getElementById('overlay').addEventListener('click', function(e){
-  if(e.target.id === 'overlay') closeModal();
+  if(e.target.id !== 'overlay') return;
+  var mb = document.getElementById('modalBody');
+  var formVarMi = mb.querySelector('input:not([disabled]):not([type="file"]), textarea:not([disabled]), select:not([disabled])');
+  if(formVarMi && !confirm('Kaydedilmemiş bilgiler kaybolacak. Kapatmak istediğinize emin misiniz?')) return;
+  closeModal();
 });
 </script>
 </body>
