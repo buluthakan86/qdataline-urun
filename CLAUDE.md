@@ -61,6 +61,18 @@ kategori.
     ([[project_otomatik_bildirim_resend]]) bağlanabilir. `urun_firma_bilgileri.
     ust_yonetici_eposta` alanı bu iş için hazır bekliyor.
 
+### 11.09.2026 (aynı gün, üçüncü tur) — Müşteri Spesifikasyonları + platform-geneli overlay bug'ı
+- **Müşteri Spesifikasyonları**: spesifikasyon detayına yeni bölüm — müşterinin
+  gönderdiği PDF/Word/Excel dosyaları (`musteri_spesifikasyonlari` jsonb,
+  mevcut `urun-belgeler` bucket'ında `musteri-spec/` yol öneki) yüklenip
+  açıklama eklenip indirilebiliyor, PDF'te referans olarak listeleniyor.
+- **🔴 Platform-geneli kritik bug bulundu ve TÜM 11 modülde düzeltildi**:
+  modal dışındaki karartılmış arka plana (overlay) tıklanınca form HİÇ
+  ONAY SORMADAN kapanıp içindeki her şey siliniyordu. URS dahil 9 modülde
+  (İSG/SDR/Doküman/BOY/Gıda Güvenliği/Ekipman/Tedarikçi/MOC) düzeltildi,
+  Eğitim Platformu ve Q-Kalite zaten güvenliydi. Detay: proje hafızasında
+  `feedback_overlay_click_veri_kaybi`.
+
 ### Backlog'a eklenen (henüz yapılmadı, kullanıcı "notlara ekle" dedi)
 - Reçete kalemi (katkı maddesi) eklerken doküman eki: spec/MSDS dosyası
   yükleme, raf ömrü, alerjen durumu gibi temel bilgilerin doğrudan o katkının
