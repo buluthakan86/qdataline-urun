@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Spesifikasyon Onayı — QDATALINE URS</title>
+<style>
+  :root{
+    --leaf:#65A30D; --leaf-d:#84CC16; --sand:#0F130A; --card:#181D10; --mint:#232A16; --mint-2:#1F2513;
+    --line:#2B3320; --ink:#F1F5E8; --muted:#8FA06E; --danger:#F87171; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--sand);color:var(--ink);font-family:'Inter',system-ui,sans-serif;}
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{max-width:480px;width:100%;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;box-shadow:var(--shadow);padding:32px;position:relative;}
+  .card h1{font-size:18px;margin:0 0 4px;color:var(--ink);}
+  .card .sub{color:var(--muted);font-size:13px;margin-bottom:20px;}
+  .field{margin:10px 0;font-size:14px;}
+  .field b{color:var(--muted);font-weight:600;display:inline-block;min-width:110px;}
+  .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:6px;
+    font-size:12px;font-weight:600;background:var(--mint);color:var(--leaf-d);}
+  .btns{display:flex;gap:12px;margin-top:24px;}
+  button{flex:1;padding:12px 16px;border-radius:10px;border:1px solid var(--line);
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-approve{background:var(--leaf);border-color:var(--leaf);color:#1A2E05;}
+  .btn-reject{background:transparent;border-color:var(--danger);color:var(--danger);}
+  .msg{margin-top:16px;padding:12px;border-radius:8px;font-size:14px;display:none;}
+  .msg.ok{background:var(--mint);color:var(--leaf-d);display:block;}
+  .msg.err{background:#F871711A;color:var(--danger);display:block;}
+  .lang{position:absolute;top:16px;right:16px;background:transparent;border:1px solid var(--line);
+    color:var(--muted);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;flex:none;width:auto;}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;
+    border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .foot{margin-top:18px;font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .logo{font-weight:800;font-size:13px;letter-spacing:.5px;color:var(--leaf-d);margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <button class="lang" id="langBtn" onclick="toggleLang()">EN</button>
+    <div class="logo">QDATALINE · URS</div>
+    <h1 id="hTitle">Spesifikasyon Onayı</h1>
+    <div class="sub" id="hSub">Yükleniyor…</div>
+    <div id="details" style="display:none">
+      <div class="field"><b id="lSpecKodu">Spec Kodu</b><span id="vSpecKodu"></span></div>
+      <div class="field"><b id="lGidaAdi">Ürün</b><span id="vGidaAdi"></span></div>
+      <div class="field"><b id="lDurum">Durum</b><span class="badge" id="vDurum"></span></div>
+    </div>
+    <div class="btns" id="btns" style="display:none">
+      <button class="btn-approve" id="btnApprove" onclick="decide('APPROVED')">Onayla</button>
+      <button class="btn-reject" id="btnReject" onclick="decide('REJECTED')">Reddet</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="foot" id="foot">Giriş yapmanıza gerek yoktur — bu link tek kullanımlıktır ve 72 saat geçerlidir.</div>
+  </div>
+</div>
+<script>
+var TOKEN = qs('token');
+var PREVIEW = null;
+var DECIDED = false;
+
+var LANG = localStorage.getItem('urs_onay_lang') || 'tr';
+var I18N = {
+  'Spesifikasyon Onayı':'Specification Approval',
+  'Yükleniyor…':'Loading…',
+  'Spec Kodu':'Spec Code','Ürün':'Product','Durum':'Status',
+  'Onayla':'Approve','Reddet':'Reject',
+  'Bu spesifikasyonu onaylamak/reddetmek üzeresiniz. Kararınız kalıcıdır.':
+    'You are about to approve/reject this specification. Your decision is final.',
+  'Bu link geçersiz veya artık kullanılamıyor.':'This link is invalid or no longer usable.',
+  'Bu link daha önce kullanılmış.':'This link has already been used.',
+  'Bu linkin süresi dolmuş.':'This link has expired.',
+  'Bu spesifikasyon başka biri tarafından güncellenmiş; artık bu link üzerinden karar verilemiyor.':
+    'This specification has already been updated by someone else; a decision can no longer be made through this link.',
+  'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.':'Too many attempts. Please try again later.',
+  'İşlem tamamlanamadı. Lütfen tekrar deneyin.':'The action could not be completed. Please try again.',
+  'Kararınız kaydedildi: ONAYLANDI':'Your decision was recorded: APPROVED',
+  'Kararınız kaydedildi: REDDEDİLDİ':'Your decision was recorded: REJECTED',
+  'İşleniyor…':'Processing…',
+  'Giriş yapmanıza gerek yoktur — bu link tek kullanımlıktır ve 72 saat geçerlidir.':
+    'No login is required — this link is single-use and valid for 72 hours.',
+};
+function t(s){ return (LANG==='en' && I18N.hasOwnProperty(s)) ? I18N[s] : s; }
+function toggleLang(){ LANG = LANG==='tr'?'en':'tr'; try{localStorage.setItem('urs_onay_lang',LANG);}catch(e){} render(); }
+
+function qs(name){
+  var m = new RegExp('[?&]'+name+'=([^&]*)').exec(location.search);
+  return m ? decodeURIComponent(m[1].replace(/\+/g,' ')) : null;
+}
+
+function render(){
+  document.getElementById('hTitle').textContent = t('Spesifikasyon Onayı');
+  document.getElementById('langBtn').textContent = LANG==='tr'?'EN':'TR';
+  document.getElementById('lSpecKodu').textContent = t('Spec Kodu');
+  document.getElementById('lGidaAdi').textContent = t('Ürün');
+  document.getElementById('lDurum').textContent = t('Durum');
+  document.getElementById('btnApprove').textContent = t('Onayla');
+  document.getElementById('btnReject').textContent = t('Reddet');
+  document.getElementById('foot').textContent = t('Giriş yapmanıza gerek yoktur — bu link tek kullanımlıktır ve 72 saat geçerlidir.');
+  if(PREVIEW && PREVIEW.ok){
+    document.getElementById('hSub').textContent = t('Bu spesifikasyonu onaylamak/reddetmek üzeresiniz. Kararınız kalıcıdır.');
+  }
+}
+
+function showMsg(text, ok){
+  var m = document.getElementById('msg');
+  m.className = 'msg ' + (ok?'ok':'err');
+  m.textContent = text;
+}
+
+function reasonText(reason){
+  switch(reason){
+    case 'used':
+    case 'already_used': return t('Bu link daha önce kullanılmış.');
+    case 'expired': return t('Bu linkin süresi dolmuş.');
+    case 'state_changed':
+    case 'already_decided': return t('Bu spesifikasyon başka biri tarafından güncellenmiş; artık bu link üzerinden karar verilemiyor.');
+    case 'rate_limited': return t('Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.');
+    default: return t('Bu link geçersiz veya artık kullanılamıyor.');
+  }
+}
+
+function load(){
+  render();
+  if(!TOKEN){
+    document.getElementById('hSub').textContent = t('Bu link geçersiz veya artık kullanılamıyor.');
+    return;
+  }
+  fetch('https://bbltvuxxtacrpgrqnfoh.supabase.co/rest/v1/rpc/qdl_approval_token_preview', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'apikey':'sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4',
+      'Authorization':'Bearer sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4'
+    },
+    body: JSON.stringify({p_token: TOKEN})
+  }).then(function(r){ return r.json(); }).then(function(data){
+    PREVIEW = data;
+    if(!PREVIEW || !PREVIEW.ok){
+      document.getElementById('hSub').textContent = reasonText(PREVIEW && PREVIEW.reason);
+      return;
+    }
+    render();
+    document.getElementById('vSpecKodu').textContent = PREVIEW.spec_kodu || '';
+    document.getElementById('vGidaAdi').textContent = PREVIEW.gida_adi || '';
+    document.getElementById('vDurum').textContent = PREVIEW.current_status || '';
+    document.getElementById('details').style.display = 'block';
+    if(PREVIEW.still_relevant){
+      document.getElementById('btns').style.display = 'flex';
+    } else {
+      showMsg(reasonText('state_changed'), false);
+    }
+  }).catch(function(){
+    showMsg(t('İşlem tamamlanamadı. Lütfen tekrar deneyin.'), false);
+  });
+}
+
+function decide(decision){
+  if(DECIDED) return;
+  DECIDED = true;
+  document.getElementById('btnApprove').disabled = true;
+  document.getElementById('btnReject').disabled = true;
+  var clicked = decision==='APPROVED' ? document.getElementById('btnApprove') : document.getElementById('btnReject');
+  clicked.innerHTML = '<span class="spin"></span>' + t('İşleniyor…');
+
+  // Gerçek istemci IP'sini sunucu tarafında (Cloudflare Pages Function) okumak
+  // için Supabase RPC'sine doğrudan değil, /api/onay-consume endpoint'ine
+  // gidiyoruz — tarayıcının kendi beyan ettiği IP güvenilmez olurdu.
+  fetch('/api/onay-consume', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ token: TOKEN, decision: decision })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(!data || !data.ok){
+      DECIDED = false;
+      document.getElementById('btnApprove').disabled = false;
+      document.getElementById('btnReject').disabled = false;
+      document.getElementById('btnApprove').textContent = t('Onayla');
+      document.getElementById('btnReject').textContent = t('Reddet');
+      showMsg(reasonText(data && data.reason), false);
+      return;
+    }
+    document.getElementById('btns').style.display = 'none';
+    showMsg(t(decision==='APPROVED' ? 'Kararınız kaydedildi: ONAYLANDI' : 'Kararınız kaydedildi: REDDEDİLDİ'), true);
+  }).catch(function(){
+    showMsg(t('İşlem tamamlanamadı. Lütfen tekrar deneyin.'), false);
+  });
+}
+
+load();
+</script>
+</body>
+</html>

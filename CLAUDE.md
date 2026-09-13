@@ -2,6 +2,118 @@
 
 > **BU DOSYA PROJENİN TEK HAFIZASIDIR.** Yeni oturumda önce bu dosya okunmalı.
 
+## 13.09.2026 — E-posta ile tek-tıkla Onay/Red (platform-geneli özelliğin URS'ye yayılması) — CANLI + TEST EDİLDİ
+
+MOC'ta pilot olarak kurulup canlıda test edilmiş paylaşımlı (`qdl_` önekli,
+modüle özel olmayan) e-posta onay linki altyapısı bu modüle de eklendi. Bu
+modülde tedarikçi/üst-yönetici **giriş portalı bilinçli olarak yok**
+([[project_urun_rakip_analizi]]) — e-posta linkiyle giriş yapmadan onay tam da
+bu boşluğu dolduruyor, özellikle bu modül için iyi bir uyum.
+
+**Hedeflenen akış:** `urun_spesifikasyonlari.durum` `'Taslak' → 'Onaylı'`
+(mevcut, gerçek onay alanı — `onaylayan_ad`/`onaylayan_rol`/`onay_tarihi`,
+10.09.2026'da "onay imza zinciri" olarak eklenmişti). Editör bir spesifikasyonu
+Taslak'ta kaydettikten sonra detay ekranındaki yeni **"📧 Onay İçin E-posta
+Gönder"** butonuna basar; link `urun_firma_bilgileri.ust_yonetici_eposta`'ya
+gider (bu alan zaten vardı, yıllık gözden geçirme bildirimi için ayrılmıştı —
+onay linki için de doğrudan kullanıldı, yeni bir alan eklenmedi). Link sahibi
+giriş yapmadan Onayla/Reddet kararı verir.
+
+**Yeni dosyalar:**
+- `sql/09_email_onay.sql` — canlıda uygulandı. Yeni: `public.
+  urun_onay_email_gonder(p_spec_id uuid)` RPC (client'tan `sb.rpc(...)` ile
+  çağrılır; `auth.uid()`+`has_modul('urun')`+`is_editor()` kontrolü var, yalnız
+  Taslak durumundaki spesifikasyonlar için çalışır, alıcı e-postası boşsa
+  `no_recipient` döner). `public.qdl_consume_approval_token`'a
+  `urun_spesifikasyonlari` dalı eklendi (MOC/İSG dallarından SONRA — bu
+  fonksiyon artık **3 modülü** dispatch ediyor: `moc_approvals`,
+  `isg_kimyasallar`, `urun_spesifikasyonlari`; ayrıca test sırasında GÖRÜLDÜ Kİ
+  Doküman Yönetimi de eş zamanlı olarak kendi `ggd_sablonlar` dalını aynı
+  fonksiyona ekliyordu — bkz. aşağıdaki "eşzamanlı düzenleme" notu).
+  `public.qdl_approval_token_preview`'a da aynı şekilde salt-okunur önizleme
+  dalı eklendi (spec_kodu/gida_adi/durum döner).
+- `urun-onay.html` — bağımsız iniş sayfası, URS.html ile aynı Lime yeşili
+  (`#65A30D`/`#84CC16`) koyu tema, kendi küçük TR/EN `t()` sözlüğü (URS.html'in
+  büyük I18N sözlüğünden AYRI — bu sayfa `buildNav()`/login akışının tamamen
+  dışında, bağımsız statik bir sayfa, modülün kimlik doğrulamalı nav'ına hiç
+  girmiyor). Supabase-js CDN'i yüklemek yerine doğrudan `fetch()` ile anon
+  RPC'ye (`qdl_approval_token_preview`) gidiyor — sayfa daha hafif, ekstra
+  bağımlılık yok.
+- `functions/api/onay-consume.js` (repo KÖKÜNDE, MOC'taki dosyanın BİREBİR
+  kopyası) — gerçek ziyaretçi IP'sini `CF-Connecting-IP`'den okuyup
+  `qdl_consume_approval_token`'a sunucu tarafında iletiyor; `urun-onay.html`
+  RPC'yi doğrudan değil bu endpoint üzerinden çağırıyor (IP sahteleme
+  boşluğu MOC'taki gibi baştan kapatıldı, ayrı bir "ikinci tur" gerekmedi).
+
+**⚠️ Eşzamanlı düzenleme bulundu (test sırasında yakalandı, gerçek bir risk):**
+`qdl_consume_approval_token` platform-geneli paylaşımlı bir fonksiyon —
+test sırasında BAŞKA BİR OTURUM (muhtemelen Doküman Yönetimi'ne aynı özelliği
+ekleyen paralel bir ajan/oturum) aynı fonksiyonu AYNI ANDA `CREATE OR REPLACE`
+ile güncelliyordu. Bir consume testinde (senaryo D, aşağıda) bu yüzden geçici
+olarak `unsupported_record` döndü — benim dalım o anki canlı tanımda yoktu,
+çünkü öbür oturum kendi `ggd_sablonlar` dalını benim eklentimden ÖNCEKİ bir
+sürüm üzerine yazmıştı. Token bu sırada tüketilip "used" olarak damgalandı
+(atomik UPDATE zaten kararı vermeden önce token'ı tüketiyor) — bu yüzden aynı
+token'la tekrar denenemedi, taze bir token'la test tekrarlandı ve doğru sonuç
+alındı. **Son durumda fonksiyon hem `urun_spesifikasyonlari` hem
+`ggd_sablonlar` dalını içeriyor — ikisi de doğrulandı, veri kaybı/bozulma
+olmadı.** **Ders:** `qdl_consume_approval_token` gibi paylaşımlı bir
+fonksiyonu birden fazla modül eşzamanlı genişletirken, `CREATE OR REPLACE`
+öncesi mutlaka en güncel canlı tanımı çekip onun üzerine dal eklemek gerekiyor
+— bu turda kazara üstüne yazma riski somut olarak yaşandı, ileride bu tür
+platform-geneli fonksiyonlara dokunan her modül bunu bilmeli.
+
+**CANLI DOĞRULAMA (13.09.2026, Management API ile, gerçek tenant/gerçek demo
+kaydı SPEC-0003 "Klasik Domates Sosu" üzerinde, sonunda TAMAMEN pristine
+duruma geri alındı — `versiyon_no` dahil, trigger'lar geçici devre dışı
+bırakılıp elle 1'e döndürüldü, `urun_spesifikasyon_versiyonlari`'nda yalnız
+orijinal "İlk oluşturma" (v1) satırı kaldı):**
+- `information_schema`/`pg_proc` ile üç fonksiyon (`urun_onay_email_gonder`,
+  güncellenmiş `qdl_consume_approval_token`, güncellenmiş
+  `qdl_approval_token_preview`) canlıda `SECURITY DEFINER` olarak doğrulandı.
+- `urun_onay_email_gonder` gerçek bir editör kimliğiyle (`set_config
+  ('request.jwt.claims', …)` ile RLS/auth simülasyonu, tıpkı 11.09.2026'daki
+  demo-yetki testinde olduğu gibi) çağrıldı → `{"ok":true,"sent_to":
+  "buluthakan86@gmail.com"}`. `net._http_response`'ta **status_code=200**
+  (Resend) doğrulandı.
+- **4 senaryo da beklendiği gibi çalıştı, kanıtlarıyla:**
+  - **A — ilk kullanım:** `qdl_consume_approval_token(...,'APPROVED',...)` →
+    `{"ok":true,"decision":"APPROVED","spec_kodu":"SPEC-0003","gida_adi":
+    "Klasik Domates Sosu"}`; sonrasında satır kontrol edildi: `durum='Onaylı'`,
+    `onaylayan_ad='E-posta linki (buluthakan86@gmail.com)'`,
+    `onaylayan_rol='Üst Yönetici (e-posta onayı)'`, `onay_tarihi` damgalandı,
+    `versiyon_no` 1→2, `sonraki_inceleme_tarihi` onay tarihinden +365 gün
+    doğru hesaplandı (mevcut `urun_spec_kaydet_trg` BEFORE trigger'ı hiç
+    değiştirilmeden, kendiliğinden tetiklendi), `kaydetme_notu`'na
+    "[E-posta linki ile onaylandı]" eklendi, versiyon geçmişine otomatik
+    snapshot düştü (mevcut AFTER trigger, dokunulmadı).
+  - **B — aynı token'ı tekrar kullanma:** aynı token ile ikinci çağrı →
+    `{"ok":false,"reason":"already_used"}`.
+  - **C — süresi dolmuş token:** `p_ttl_hours=>0` ile üretilip birkaç saniye
+    beklenip tüketildi → `{"ok":false,"reason":"expired"}`.
+  - **D — kayıt token'dan sonra değişmiş (expected_status uyuşmazlığı):**
+    token üretildikten sonra `durum` Taslak→Onaylı yapıldı, sonra token
+    tüketildi → `{"ok":false,"reason":"state_changed"}` (yukarıdaki eşzamanlı
+    düzenleme olayından sonra taze bir token'la tekrarlanıp doğrulandı).
+- Test için geçici olarak eklenen `urun_firma_bilgileri` satırı (test
+  tenant'ı `11111111-…`) ve tüm test token'ları/rate-limit sayaçları test
+  sonunda silindi; SPEC-0003 kaydı içerik olarak da (`durum`, `onaylayan_*`,
+  `onay_tarihi`, `kaydetme_notu`, `sonraki_inceleme_tarihi`, `versiyon_no`)
+  test öncesi haline dönüldü.
+- **Doğrulanamayan tek şey:** gerçek tarayıcıda "📧 Onay İçin E-posta Gönder"
+  butonuna tıklama ve `urun-onay.html`'i gerçek bir e-postadaki linkten açıp
+  Onayla/Reddet'e tıklama deneyimi — bu hâlâ kullanıcının kendi testini
+  gerektiriyor.
+
+**Yayın durumu:** `URS.html`, `sql/09_email_onay.sql`, `urun-onay.html`,
+`functions/api/onay-consume.js` `qdataline-urun` reposuna commit edilip
+push edildi. Cloudflare Pages'in bu push'u otomatik build'lediği bir
+sonraki oturumda `curl` ile doğrulanmalı — Ekipman/URS modülünde daha önce
+webhook'un bazen tetiklenmediği görülmüştü ([[feedback_cloudflare_webhook_calismadi]]),
+tetiklenmezse Cloudflare API ile manuel deploy tetiklenmeli.
+
+---
+
 ## 11.09.2026 — FAZ 5: BÜYÜK KULLANICI GERİ BİLDİRİMİ TURU
 
 Kullanıcı canlı testte spesifikasyon oluşturmayı denedi, "aynı makarna spesifikasyonu

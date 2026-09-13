@@ -1189,6 +1189,7 @@ function openSpecDetay(specId, urunIdForNew){
     +(s?'<button class="btn btn-line" onclick="specYazdir(\''+s.id+'\')">🖨 PDF / Yazdır</button> <button class="btn btn-line" onclick="etiketMetniGoster(\''+s.id+'\')">🏷 Etiket Metni</button>':'')
     +(ce?('<button class="btn btn-line" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Taslak\')">Taslak Olarak Kaydet</button>'
         +'<button class="btn btn-leaf" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Onaylı\')">Onayla ve Kaydet</button>'):'')
+    +(ce&&s&&s.durum==='Taslak'?('<button class="btn btn-line" id="spOnayEpostaBtn" onclick="specOnayEmailGonder(\''+s.id+'\')" title="Giriş yapmadan, e-postadaki linkten Onayla/Reddet kararı verebilir">📧 Onay İçin E-posta Gönder</button>'):'')
     +'</div>', true);
   SPEC_GORSEL_YOLLARI = (f.gorsel_yollari||[]).slice();
   gorselleriYukle(SPEC_GORSEL_YOLLARI);
@@ -1267,6 +1268,30 @@ async function specKaydet(specId, urunId, durum){
     await loadAll(); closeModal(); render(); buildNav();
   }catch(x){ e.textContent=ursHata(x); }
   finally{ kilitAc(); }
+}
+async function specOnayEmailGonder(specId){
+  var btn = document.getElementById('spOnayEpostaBtn');
+  if(!btn || btn.disabled) return;
+  btn.disabled = true; var orig = btn.textContent; btn.textContent = 'Gönderiliyor…';
+  try{
+    var r = await sb.rpc('urun_onay_email_gonder', { p_spec_id: specId });
+    if(r.error) throw r.error;
+    var d = r.data;
+    if(d && d.ok){
+      btn.textContent = '✓ Gönderildi: '+d.sent_to;
+    } else {
+      var neden = (d&&d.reason)||'';
+      var msj = neden==='no_recipient' ? 'Önce Ayarlar\'dan "Üst Yönetici E-postası" girin.'
+              : neden==='not_draft' ? 'Bu spesifikasyon artık Taslak durumunda değil.'
+              : neden==='forbidden' ? 'Bu işlem için yetkiniz yok.'
+              : 'Gönderilemedi, lütfen tekrar deneyin.';
+      btn.textContent = orig; btn.disabled = false;
+      var e = document.getElementById('spHata'); if(e) e.textContent = msj;
+    }
+  }catch(x){
+    btn.textContent = orig; btn.disabled = false;
+    var e2 = document.getElementById('spHata'); if(e2) e2.textContent = ursHata(x);
+  }
 }
 async function specYazdir(specId){
   var s = state.specler.find(function(x){return x.id===specId;});
