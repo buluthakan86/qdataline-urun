@@ -105,6 +105,18 @@ orijinal "İlk oluşturma" (v1) satırı kaldı):**
   Onayla/Reddet'e tıklama deneyimi — bu hâlâ kullanıcının kendi testini
   gerektiriyor.
 
+**⚠️ Ek güvenlik düzeltmesi (aynı gün, `information_schema.routine_privileges`
+ile denetlenirken bulundu):** yeni `urun_onay_email_gonder` fonksiyonu
+`revoke all ... from public` sonrasında bile `anon`'a EXECUTE açık geliyordu —
+tam olarak [[feedback_postgres_default_execute_grant]]'te uyarılan tuzak
+(`revoke ... from public` tek başına `anon`/`authenticated`'a önceden verilmiş
+PUBLIC-kaynaklı grant'i geri almıyor). `revoke execute ... from anon` ile
+canlıda düzeltildi ve doğrulandı (`anon` artık listede yok, yalnız
+`postgres`/`authenticated`/`service_role` kaldı); `sql/09_email_onay.sql`
+dosyasına da işlendi. Fonksiyon zaten kendi içinde `auth.uid() is null` kontrolü
+yaptığı için pratikte anon bir şey yapamıyordu, ama GRANT seviyesinde de
+kapatılması standart kural.
+
 **Yayın durumu:** `URS.html`, `sql/09_email_onay.sql`, `urun-onay.html`,
 `functions/api/onay-consume.js` `qdataline-urun` reposuna commit edilip
 push edildi. Cloudflare Pages'in bu push'u otomatik build'lediği bir

@@ -71,7 +71,14 @@ begin
   return jsonb_build_object('ok', true, 'sent_to', v_fb.ust_yonetici_eposta);
 end
 $$;
-revoke all on function public.urun_onay_email_gonder(uuid) from public;
+-- ⚠️ Postgres varsayılan EXECUTE grant tuzağı (bkz.
+-- [[feedback_postgres_default_execute_grant]]): "revoke all from public" TEK
+-- BAŞINA anon/authenticated'a önceden verilmiş PUBLIC-kaynaklı EXECUTE'u
+-- geri almaz — her ikisinden de AYRI AYRI revoke etmek gerekir. 13.09.2026
+-- canlı doğrulamasında `information_schema.routine_privileges` ile bu
+-- fonksiyonun anon'a da açık geldiği görüldü, elle düzeltildi; bu dosyaya da
+-- işlendi (idempotent, tekrar çalıştırılırsa no-op).
+revoke all on function public.urun_onay_email_gonder(uuid) from public, anon, authenticated;
 grant execute on function public.urun_onay_email_gonder(uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
