@@ -1,5 +1,33 @@
 # CLAUDE.md — Reçete ve Spesifikasyon Yönetimi (URS)
 
+## ⚡ EK (14.09.2026) — Faz 1 "Görünürlük": sürüm damgası + tarayıcı hata toplama
+
+Platform-geneli. Ayrıntı ve gerekçeler: `_platform-ortak/README.md` → "Faz 1 — Görünürlük",
+SQL: `_platform-ortak/sql/02_qdl_gorunurluk.sql` (14.09.2026 canlıya uygulandı).
+
+Bu modülde değişen:
+- **Yayın kökünde `qdl-version.json`** — `{modul, surum, commit, built_at}`. Supabase
+  içindeki `qdl_deploy_check()` işi (günde 4 kez) bunu okuyor; site erişilemiyorsa ya da
+  **push sonrası Cloudflare build tetiklenmediği için eski sürüm yayındaysa** durum sabah
+  06:50 UTC'deki tek günlük özet e-postasına düşüyor. Sürüm damgası **elle düzenlenmez**:
+  `node _platform-ortak/istemci/surum-damgala.cjs <kod>` üretir, push sonrası
+  `select public.qdl_modul_surum_bekle('<kod>','<surum>');` çalıştırılır.
+- **Yayın kökünde `qdl-hata.js`** + ana HTML dosyalarının `</head>` öncesine
+  `<script src="/qdl-hata.js"></script>`. Bağımlılıksız; `window.onerror` ve
+  `unhandledrejection` yakalanıp `qdl_log_client_error(...)` RPC'sine yazılıyor.
+  Modül kodu/sürümü `/qdl-version.json` dosyasından okunur — **bu dosyada modüle özel
+  yapılandırma yok**. Sayfa sağlıklıyken sıfır ağ isteği; oturum başına en fazla 10
+  gönderim; IP başına saatte 40 çağrı sunucu tarafı hız sınırı; hata mesajı/stack hem
+  istemcide hem sunucuda maskeleniyor; form değerleri **asla** gönderilmiyor.
+- Giriş yapmamış ziyaretçi de hata bildirebilir (login ekranındaki hata da önemli), ama
+  `tenant_id` ve kullanıcı kimliği **istemciden alınmaz** — sunucuda oturumdan türetilir.
+- 3. parti hata toplayıcı (Sentry/LogRocket vb.) **bilinçli olarak kullanılmadı**: her
+  biri KVKK anlamında ayrı bir alt-işleyen doğurur ve sözleşmede beyan gerektirir.
+
+**`qdl-hata.js` bu klasörde düzenlenmez.** Tek doğru kopya `_platform-ortak/istemci/`
+altındadır; buradaki dosya onun birebir kopyasıdır.
+
+
 > **BU DOSYA PROJENİN TEK HAFIZASIDIR.** Yeni oturumda önce bu dosya okunmalı.
 
 ## 13.09.2026 — E-posta ile tek-tıkla Onay/Red (platform-geneli özelliğin URS'ye yayılması) — CANLI + TEST EDİLDİ
