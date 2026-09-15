@@ -469,3 +469,28 @@ satın aldığı tüm modülleri otomatik verir). Modül satışı/iptali:
 
 Ayrıntı, geri alma SQL'i ve regresyon kanıtı: `_platform-ortak/README.md` →
 "Faz 3 — Satılabilirlik" ve `_platform-ortak/sql/05_*`, `06_*`.
+
+
+---
+
+## 15.09.2026 — Paylaşımlı onay fonksiyonları MERKEZİLEŞTİRİLDİ
+
+`qdl_consume_approval_token` / `qdl_approval_token_preview` artık **modül dalı
+içermiyor**. Dağıtım `public.qdl_approval_handlers` kayıt tablosundan yapılıyor;
+her modül **kendi** handler fonksiyonunu yönetiyor.
+
+**Bu depodaki eski SQL dosyası ETKİSİZLEŞTİRİLDİ** (silinmedi, yoruma alındı):
+`sql/09_email_onay.sql`
+Çalıştırılsaydı diğer modüllerin dallarını **sessizce silecekti** (7 daldan 4'ü).
+
+**Bu modülün onay mantığı artık:** `public.urun_spec_onay_uygula()`
+(kaynak: `_platform-ortak/sql/09_qdl_onay_dagitim_kaydi.sql`)
+
+> Paylaşımlı bir fonksiyonu değiştirmen gerekirse **önce**
+> `_platform-ortak/README.md` > "Paylaşımlı bir fonksiyon nasıl değiştirilir"
+> bölümündeki 5 adımlı prosedürü uygula. Değişiklik sonrası
+> `_platform-ortak/sql/10_qdl_onay_nobetci.sql` **0 satır** vermeli.
+
+7 onay dalının tamamı (MOC, İSG, Q-Kalite, GGD, Doküman, Tedarikçi, URS)
+gerçek token'larla uçtan uca test edildi; onay ve red yolları değişiklikten
+önce ve sonra **birebir aynı** sonucu verdi.
