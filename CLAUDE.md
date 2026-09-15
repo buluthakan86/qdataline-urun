@@ -443,3 +443,29 @@ kullanıcı gözden geçirip elle kaydetmeden hiçbir şey veritabanına yazılm
 2. "Dış kaynaklı doküman takip sistemi" — kullanıcı 09.09.2026'da bunu bilinçli
    olarak beklemede bıraktı ("notlar da kalsın") — bu modül mü, Doküman Yönetimi
    mi olacağı HENÜZ karar verilmedi, ileride ayrıca gündeme gelecek.
+
+## Faz 3 — `has_modul()` artık FİRMA seviyesinde de kontrol ediyor (15.09.2026)
+
+**Bu modülün RLS policy'lerini doğrudan etkiler.** `public.has_modul('<kod>')`
+eskiden yalnız `public.modul_yetki`'ye (kullanıcı bazlı) bakıyordu. Artık **VE**
+kuralı işliyor:
+
+1. kullanıcının `modul_yetki` satırı var (eski kural, korundu), **ve**
+2. kullanıcının firması `public.tenant_modules`'ta o modüle sahip ve `enabled`.
+
+Yani bir kullanıcıya modül yetkisi vermek **tek başına yetmez** — firmasının da o
+modülü satın almış olması gerekir. Bir kullanıcı "yetkisi olduğu hâlde veri
+göremiyorsa" önce şuna bakılır:
+
+```sql
+select * from public.tenant_modules
+ where tenant_id = (select tenant_id from public.profiles where id = '<user_id>');
+```
+
+Yeni firma açarken `public.qdl_yeni_firma(...)`, var olan firmaya kullanıcı
+eklerken `public.qdl_firmaya_kullanici_ekle(...)` kullanılır (ikincisi firmanın
+satın aldığı tüm modülleri otomatik verir). Modül satışı/iptali:
+`public.qdl_firma_modul_ayarla(tenant, modul, aktif)`.
+
+Ayrıntı, geri alma SQL'i ve regresyon kanıtı: `_platform-ortak/README.md` →
+"Faz 3 — Satılabilirlik" ve `_platform-ortak/sql/05_*`, `06_*`.
