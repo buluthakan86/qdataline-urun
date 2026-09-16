@@ -288,8 +288,19 @@ tr:hover td{background:var(--mint-2)}
 // ---------------------------------------------------------------------------
 // SUPABASE — ortak proje (bbltvuxxtacrpgrqnfoh), diğer 10 modülle aynı.
 // ---------------------------------------------------------------------------
-const SUPABASE_URL = 'https://bbltvuxxtacrpgrqnfoh.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4';
+var SUPABASE_URL = 'https://bbltvuxxtacrpgrqnfoh.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4';
+try {
+  var __qdlEnvXhr = new XMLHttpRequest();
+  __qdlEnvXhr.open('GET', '/qdl-env.json', false);
+  __qdlEnvXhr.send(null);
+  if (__qdlEnvXhr.status === 200) {
+    var __qdlEnv = JSON.parse(__qdlEnvXhr.responseText);
+    if (__qdlEnv && __qdlEnv.supabase_url) SUPABASE_URL = __qdlEnv.supabase_url;
+    if (__qdlEnv && __qdlEnv.supabase_anon_key) SUPABASE_ANON_KEY = __qdlEnv.supabase_anon_key;
+  }
+} catch (e) { /* qdl-env.json yoksa/bozuksa sessizce prod'da kal */ }
+
 const MODUL_KODU = 'urun';
 
 function qdlCookieAuthStorage(){
