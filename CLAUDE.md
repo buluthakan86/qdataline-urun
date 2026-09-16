@@ -572,3 +572,12 @@ anahtarı `urun.tourDone`. Giriş sonrası (`afterLogin`) ilk kez otomatik açı
 menüdeki "🧭 Turu göster" düğmesinden istenildiğinde tekrar başlatılabilir. Sürüm damgası
 `node .../_platform-ortak/istemci/surum-damgala.cjs urun` ile 2026.09.16-7 olarak
 yenilendi.
+
+## 16.09.2026 (ek) — Standart boş-durum (empty state) bileşeni
+
+Satışa hazırlık denetiminde bulunan eksik kapatıldı: liste ekranlarında sade
+"Henüz ... yok" metni yerine standart `emptyState(title, desc, ctaLabel,
+ctaOnclick)` yardımcı fonksiyonu eklendi (ikon + başlık + açıklama + CTA
+butonu, `.empty-state` CSS sınıfı). Uygulanan 4 ekran: Ürünler (`+ Yeni
+Ürün`), Reçeteler (Ürünler'e Git), Spesifikasyonlar (Ürünler'e Git),
+Sertifikalar (`+ Sertifika Ekle`). Sürüm damgası 2026.09.16-8.

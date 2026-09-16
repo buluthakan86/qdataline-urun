@@ -139,6 +139,11 @@ tr:hover td{background:var(--mint-2)}
 .hidden{display:none !important}
 .muted{color:var(--muted)}
 .empty{padding:30px; text-align:center; color:var(--muted); font-size:13px}
+.empty-state{padding:48px 24px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px}
+.empty-state svg{opacity:.55; margin-bottom:4px}
+.empty-state .es-title{font-size:15px; font-weight:600}
+.empty-state .es-desc{font-size:13px; color:var(--muted); max-width:360px; line-height:1.5}
+.empty-state .es-cta{margin-top:8px}
 .note{font-size:12px; color:var(--muted); background:var(--mint-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:14px}
 .x{background:transparent; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:2px 8px; border-radius:6px}
 .x:hover{background:var(--mint-2); color:var(--ink)}
@@ -480,6 +485,11 @@ var _kayitKilit = false;
 function kilitliMi(){ if(_kayitKilit) return true; _kayitKilit = true; return false; }
 function kilitAc(){ _kayitKilit = false; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function emptyState(title, desc, ctaLabel, ctaOnclick){
+  var icon = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 14h3M8 17h6"/></svg>';
+  var cta = ctaLabel ? '<button class="btn btn-line es-cta" onclick="'+ctaOnclick+'">'+ctaLabel+'</button>' : '';
+  return '<div class="empty-state">'+icon+'<div class="es-title">'+esc(title)+'</div><div class="es-desc">'+esc(desc)+'</div>'+cta+'</div>';
+}
 function fmt(n){ return (n==null||n==='') ? '—' : (Number(n)||0).toLocaleString('tr-TR', {maximumFractionDigits:2}); }
 function val(id){ var el=document.getElementById(id); return el?el.value:''; }
 function numOrNull(id){ var v=val(id); return v===''?null:Number(v); }
@@ -828,7 +838,7 @@ function renderUrunler(){
   }).join('');
   return '<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Ürün</th><th>Kategori</th><th>Durum</th><th>Reçete</th><th>Spesifikasyon</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :'<div class="empty">Henüz ürün eklenmedi.</div>')
+      :emptyState('Henüz ürün eklenmedi', 'İlk ürününüzü ekleyerek reçete ve spesifikasyon yönetimine başlayın.', t('+ Yeni Ürün'), 'openUrunForm()'))
     +'</div></div></div>';
 }
 function openUrunForm(id){
@@ -882,7 +892,7 @@ function renderReceteler(){
   return '<div class="note">Reçetedeki hammaddeleri TGK kuralı gereği <b>azalan ağırlık sırasıyla</b> girin — bu sıra, spesifikasyondaki "içindekiler" listesinin sırasını belirler.</div>'
     +'<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Ürün</th><th>Hammadde Sayısı</th><th>Toplam Oran</th><th>Alerjenler</th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :'<div class="empty">Önce "Ürünler" ekranından bir ürün ekleyin.</div>')
+      :emptyState('Henüz aktif ürün yok', 'Reçete girebilmek için önce "Ürünler" ekranından bir ürün ekleyin.', '+ Ürünler’e Git', "showView('urunler')"))
     +'</div></div></div>';
 }
 function openReceteDetay(urunId){
@@ -970,7 +980,7 @@ function renderSpesifikasyonlar(){
   }).join('');
   return '<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Spec Kodu</th><th>Ürün</th><th>Gıda Adı</th><th>Versiyon</th><th>Durum</th><th>Son Güncelleme</th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :'<div class="empty">Henüz spesifikasyon oluşturulmadı. "Ürünler" ekranından bir ürün için spesifikasyon oluşturabilirsiniz.</div>')
+      :emptyState('Henüz spesifikasyon oluşturulmadı', '"Ürünler" ekranından bir ürün için ürün spesifikasyonu oluşturabilirsiniz.', '+ Ürünler’e Git', "showView('urunler')"))
     +'</div></div></div>';
 }
 
@@ -1572,7 +1582,7 @@ function renderSertifikalar(){
     +'<button class="btn btn-leaf" onclick="openSertForm(null, document.getElementById(\'sertUrunSec\').value)">+ Sertifika Ekle</button>'):'')+'</div>'
     +'<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Ürün</th><th>Tür</th><th>Sertifika No</th><th>Veren Kurum</th><th>Geçerlilik Bitiş</th><th>Durum</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :'<div class="empty">Henüz sertifika eklenmedi.</div>')
+      :emptyState('Henüz sertifika eklenmedi', 'Ürünleriniz için Helal, Organik, BRCGS gibi sertifikaları ekleyip takip edin.', (urunSecenekleri?'+ Sertifika Ekle':null), "openSertForm(null, document.getElementById('sertUrunSec')?document.getElementById('sertUrunSec').value:'')"))
     +'</div></div></div>';
 }
 var SERT_TURLERI = ['Helal','Organik','BRCGS','IFS','Kosher','ISO 22000','Diğer'];
