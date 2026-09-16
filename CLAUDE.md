@@ -529,3 +529,22 @@ iş olarak işaretlendi, şu an yapılmadı.
 
 Nöbetçiler bu turda da temiz: `qdl_nobetci_anon_execute()` → 0,
 `qdl_nobetci_onay()` → 0.
+
+### 16.09.2026 — Prod/staging config split (qdl-env.json)
+BOY'daki desen (`_platform-ortak/README.md` > "Test ortamı") bu modüle taşındı.
+`URS.html`: `SUPABASE_URL`/`SUPABASE_ANON_KEY` artık senkron XHR ile
+`/qdl-env.json`'dan okunuyor, okunamazsa sessizce prod'da kalıyor.
+`urun-onay.html` BİLİNÇLİ OLARAK dışarıda bırakıldı — o sayfa yalnızca prod'da
+üretilen e-posta onay token'larını tüketiyor (ham `fetch` ile prod'a sabit),
+bir staging ortamında anlamlı bir kullanım senaryosu yok. `master` branch
+`qdl-env.json` prod'u işaret ediyor, yeni `staging` branch staging'i.
+Commit: `c176b7e` (env-split), `dbcfb7e` (sürüm damgası), staging branch
+`b51c103`. Cloudflare'in bu depodaki native Git entegrasyonu bilinen sebeple
+(bkz. yukarıdaki "Cloudflare↔GitHub" notu) `staging` dalını otomatik
+derlemedi; Management API ile elle `branch=staging` dağıtımı tetiklendi
+(`3321ffa4`, build+deploy `success`). `.github/workflows/cloudflare-deploy.yml`
+yalnız `master`'ı dinliyor — staging dalı için otomatik tetikleyici YOK,
+gelecekte staging'e sık push olacaksa iş akışına `staging` dalı da eklenmeli.
+Kanıt: `https://urun.qdataline.com/` → 200, `qdl-version.json` →
+`2026.09.16-4`, `qdl-env.json` → prod URL. Staging: staging anon key ile
+gerçek REST sorgusu 200 döndü.
