@@ -494,3 +494,38 @@ her modül **kendi** handler fonksiyonunu yönetiyor.
 7 onay dalının tamamı (MOC, İSG, Q-Kalite, GGD, Doküman, Tedarikçi, URS)
 gerçek token'larla uçtan uca test edildi; onay ve red yolları değişiklikten
 önce ve sonra **birebir aynı** sonucu verdi.
+
+---
+
+## 16.09.2026 — Sessiz veri kırpılması denetimi (Faz 2 kapsamı dışı kalmıştı)
+
+Platform genelinde Faz 2'de İSG/GGD/BOY'da düzeltilen "PostgREST 1000 satır
+sınırı sessizce listeyi kısaltıyor" sorunu bu modülde **atlanmıştı**, yalnız
+deploy ve FK düzeltmesi almıştı. Bu turda tamamlandı.
+
+`URS.html` içindeki tüm `.select()` çağrıları (8 adet) sınıflandırıldı:
+- 5'i zaten `tumSatirlar()` sayfalama yardımcısı ile sınırsızdı (ürünler,
+  reçeteler, spesifikasyonlar, sertifikalar + 1 tanesi hatalıydı, aşağıda)
+- 1'i tek satır (`profiles`), 1'i tek satır (`urun_firma_bilgileri`), 1'i
+  yaz-sonra-getir (`insert().select().maybeSingle()`) — hepsi olduğu gibi
+  bırakıldı, sorun yok.
+
+**Gerçek bug bulundu:** `urun_spesifikasyon_versiyonlari` sorgusu
+`tumSatirlar()` içindeyken ayrıca `.limit(500)` de taşıyordu. PostgREST bu
+ikisini birleştirince ilk sayfa 500 satırla kesiliyor, 500 < sayfalama adımı
+(1000) olduğu için döngü "bitti" sanıp duruyordu — spesifikasyon versiyon
+geçmişi 500'ün üzerindeki her kayıtta **sessizce** kırpılıyordu. `.limit(500)`
+kaldırıldı, artık yalnız `tumSatirlar()` yönetiyor.
+
+**Kanıt (Deneme Firması, gerçek satırlarla):** 1200 test satırı eklenip
+toplam 1203'e çıkarıldı. Eski sorgu deseni 500/1203 döndürüyordu (703 satır
+sessizce kayıp); düzeltmeden sonra 1203/1203 tam geliyor. Test satırları
+silindi, satır sayısı 3'e (özgün durum) geri döndü.
+
+**Gelecek için not:** `urun_spesifikasyon_versiyonlari` yıllar içinde
+onbinlerce satıra ulaşabilecek tek ekran — bugün `tumSatirlar()` yeterli ama
+gerçek sunucu-taraflı sayfalama (arama + sayfa parametreli) gerekirse ~1 günlük
+iş olarak işaretlendi, şu an yapılmadı.
+
+Nöbetçiler bu turda da temiz: `qdl_nobetci_anon_execute()` → 0,
+`qdl_nobetci_onay()` → 0.

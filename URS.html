@@ -533,7 +533,7 @@ async function loadAll(){
     tumSatirlar(function(){ return sb.from('urun_urunler').select('*').is('deleted_at', null).order('ad'); }),
     tumSatirlar(function(){ return sb.from('urun_receteler').select('*').is('deleted_at', null).order('sira_no'); }),
     tumSatirlar(function(){ return sb.from('urun_spesifikasyonlari').select('*').is('deleted_at', null).order('created_at', {ascending:false}); }),
-    tumSatirlar(function(){ return sb.from('urun_spesifikasyon_versiyonlari').select('*').order('created_at', {ascending:false}).limit(500); }),
+    tumSatirlar(function(){ return sb.from('urun_spesifikasyon_versiyonlari').select('*').order('created_at', {ascending:false}); }),
     tumSatirlar(function(){ return sb.from('urun_sertifikalari').select('*').is('deleted_at', null).order('gecerlilik_bitis', {ascending:true}); }),
     sb.from('urun_firma_bilgileri').select('*').maybeSingle()
   ]);
