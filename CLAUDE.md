@@ -562,3 +562,13 @@ kullanılıyordu — TASARIM_STANDARDI'ye göre platformdaki hiçbir başka mod�
 doğrulandı. Arka uç aynı: `public.qdl_musteri_bildirim_gonder`. ÖNEMLİ:
 çalışma kopyası yalnız `C:\temp\qdataline-urun` — Drive'daki "Reçete ve
 Spesifikasyon Yönetimi" klasörü bayat bir ayna, ona dokunulmadı.
+
+## 16.09.2026 (ek) — Onboarding turu eklendi
+
+Laboratuvar Ekipman Bakım Programı'ndaki spotlight+ipucu onboarding turu deseni URS'ye
+port edildi. `URS.html` içine `URS_TOUR_STEPS`/`startUrsTour()` eklendi (6 adım: Menü,
+Ürünler, Reçeteler, Spesifikasyonlar, Alerjen Matrisi, Sorun Bildir). `localStorage`
+anahtarı `urun.tourDone`. Giriş sonrası (`afterLogin`) ilk kez otomatik açılır; sol
+menüdeki "🧭 Turu göster" düğmesinden istenildiğinde tekrar başlatılabilir. Sürüm damgası
+`node .../_platform-ortak/istemci/surum-damgala.cjs urun` ile 2026.09.16-7 olarak
+yenilendi.

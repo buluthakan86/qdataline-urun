@@ -264,6 +264,7 @@ tr:hover td{background:var(--mint-2)}
       <div id="cloudUserLbl" style="margin-bottom:8px"></div>
       <button class="btn btn-line" style="width:100%; margin-bottom:8px" onclick="toggleLang()" id="langBtn">EN</button>
       <button class="btn btn-line" style="width:100%; margin-bottom:8px" onclick="toggleTheme()" id="themeBtn">🌙 Koyu / ☀ Açık</button>
+      <button class="btn btn-line" id="ursTurGosterBtn" onclick="startUrsTour()">🧭 Turu göster</button>
       <button class="btn btn-line" style="width:100%" onclick="doLogout()">⏻ Çıkış Yap</button>
     </div>
   </aside>
@@ -304,6 +305,18 @@ tr:hover td{background:var(--mint-2)}
     #sorunBildirBtn{padding:0; width:44px; justify-content:center;}
     #sorunBildirBtn .sbLbl{display:none;}
   }
+</style>
+
+<!-- Onboarding turu (Laboratuvar Ekipman Bakım Programı desenİnden port, 16.09.2026) -->
+<style>
+  .tour-overlay{ position:fixed; inset:0; z-index:2200; pointer-events:none; }
+  .tour-hole{ position:absolute; border-radius:8px; box-shadow:0 0 0 9999px rgba(0,0,0,.62); transition:top .2s,left .2s,width .2s,height .2s; }
+  .tour-pop{ position:absolute; width:320px; max-width:90vw; background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:14px; pointer-events:auto; }
+  .tour-title{ font-weight:650; font-size:15px; margin-bottom:6px; color:var(--ink); }
+  .tour-text{ font-size:13px; color:var(--muted); line-height:1.5; }
+  .tour-foot{ display:flex; align-items:center; gap:8px; margin-top:12px; }
+  .tour-dots{ font-size:11px; color:var(--muted); margin-right:4px; }
+  #ursTurGosterBtn{ width:100%; margin-bottom:8px; }
 </style>
 <button id="sorunBildirBtn" class="hidden" onclick="sorunBildirAc()"
         title="Sorun bildir" aria-label="Sorun bildir">
@@ -621,6 +634,7 @@ async function afterLogin(user){
   document.getElementById('appRoot').classList.remove('hidden');
   try{ document.getElementById('sorunBildirBtn').classList.remove('hidden'); }catch(e){}
   showView('anasayfa');
+  try{ if(!ursTurGorulduMu()) setTimeout(startUrsTour, 400); }catch(e){}
 }
 
 (async function initSession(){
@@ -1687,6 +1701,75 @@ document.getElementById('overlay').addEventListener('click', function(e){
   if(formVarMi && !confirm('Kaydedilmemiş bilgiler kaybolacak. Kapatmak istediğinize emin misiniz?')) return;
   closeModal();
 });
+
+/* ---- Onboarding turu (LEYS modülündeki tour.js deseninden port, 16.09.2026) ---- */
+var URS_TOUR_DONE_KEY = 'urun.tourDone';
+var URS_TOUR_STEPS = [
+  { sel:'.side', title:'Menü', text:'Tüm URS ekranları burada: ürünler, reçeteler, spesifikasyonlar, alerjen matrisi ve sertifikalar.', place:'right' },
+  { sel:'[data-v="urunler"]', title:'Ürünler', text:'Ürün kataloğunuzu buradan yönetir, her ürünün reçete ve spesifikasyon bağlantısını görürsünüz.', place:'right' },
+  { sel:'[data-v="receteler"]', title:'Reçeteler', text:'Ürün reçetelerini bileşen/oran bilgisiyle buradan oluşturur ve güncellersiniz.', place:'right' },
+  { sel:'[data-v="spesifikasyonlar"]', title:'Spesifikasyonlar', text:'TGK/BRCGS uyumlu spesifikasyonları buradan hazırlar, onaya gönderir ve versiyonlarsınız.', place:'right' },
+  { sel:'[data-v="alerjen"]', title:'Alerjen Matrisi', text:'Ürün bazlı alerjen matrisini buradan takip edersiniz.', place:'right' },
+  { sel:'#sorunBildirBtn', title:'Sorun Bildir', text:'Bir hata veya eksiklik fark ederseniz bu düğmeden doğrudan bildirebilirsiniz.', place:'top' }
+];
+function ursTurGorulduMu(){ try{ return localStorage.getItem(URS_TOUR_DONE_KEY) === '1'; }catch(e){ return true; } }
+function ursTurGorulduIsaretle(){ try{ localStorage.setItem(URS_TOUR_DONE_KEY, '1'); }catch(e){} }
+function startUrsTour(steps){
+  steps = steps || URS_TOUR_STEPS;
+  var i = 0;
+  var overlay = document.createElement('div');
+  overlay.className = 'tour-overlay';
+  overlay.innerHTML = '<div class="tour-hole" id="tour-hole"></div>'
+    + '<div class="tour-pop" id="tour-pop" role="dialog" aria-modal="true" aria-labelledby="tour-title">'
+    + '<div class="tour-title" id="tour-title"></div>'
+    + '<div class="tour-text" id="tour-text"></div>'
+    + '<div class="tour-foot">'
+    + '<button class="btn btn-line" id="tour-skip">Geç</button>'
+    + '<span style="flex:1"></span>'
+    + '<span class="tour-dots" id="tour-dots"></span>'
+    + '<button class="btn btn-line" id="tour-prev">←</button>'
+    + '<button class="btn btn-leaf" id="tour-next">İleri</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+  var hole = overlay.querySelector('#tour-hole');
+  var pop = overlay.querySelector('#tour-pop');
+  function finish(){ ursTurGorulduIsaretle(); overlay.remove(); window.removeEventListener('keydown', onKey); }
+  function show(){
+    var step = steps[i];
+    var el = document.querySelector(step.sel);
+    if(!el){ i++; if(i >= steps.length){ finish(); return; } show(); return; }
+    el.scrollIntoView({ block:'center', behavior:'smooth' });
+    var r = el.getBoundingClientRect(); var pad = 6;
+    hole.style.cssText = 'top:'+(r.top-pad)+'px;left:'+(r.left-pad)+'px;width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px';
+    overlay.querySelector('#tour-title').textContent = step.title;
+    overlay.querySelector('#tour-text').textContent = step.text;
+    overlay.querySelector('#tour-dots').textContent = (i+1)+' / '+steps.length;
+    overlay.querySelector('#tour-prev').disabled = (i === 0);
+    overlay.querySelector('#tour-next').textContent = (i === steps.length-1) ? 'Bitir' : 'İleri';
+    pop.style.visibility = 'hidden'; pop.style.top = '0'; pop.style.left = '0';
+    requestAnimationFrame(function(){
+      var pr = pop.getBoundingClientRect(); var top, left;
+      if(step.place === 'right'){ left = r.right + 12; top = Math.max(12, r.top); }
+      else if(step.place === 'top'){ top = Math.max(12, r.top - pr.height - 12); left = Math.min(r.left, window.innerWidth - pr.width - 12); }
+      else { top = r.bottom + 12; left = Math.min(Math.max(12, r.left), window.innerWidth - pr.width - 12); }
+      if(top + pr.height > window.innerHeight - 12) top = window.innerHeight - pr.height - 12;
+      if(left + pr.width > window.innerWidth - 12) left = window.innerWidth - pr.width - 12;
+      pop.style.top = Math.max(12, top)+'px'; pop.style.left = Math.max(12, left)+'px'; pop.style.visibility = 'visible';
+    });
+  }
+  function next(){ if(i < steps.length-1){ i++; show(); } else finish(); }
+  function prev(){ if(i > 0){ i--; show(); } }
+  function onKey(e){
+    if(e.key === 'Escape') finish();
+    else if(e.key === 'ArrowRight' || e.key === 'Enter') next();
+    else if(e.key === 'ArrowLeft') prev();
+  }
+  overlay.querySelector('#tour-skip').addEventListener('click', finish);
+  overlay.querySelector('#tour-next').addEventListener('click', next);
+  overlay.querySelector('#tour-prev').addEventListener('click', prev);
+  window.addEventListener('keydown', onKey);
+  show();
+}
 </script>
 </body>
 </html>
