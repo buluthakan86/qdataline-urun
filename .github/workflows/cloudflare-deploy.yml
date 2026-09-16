@@ -1,0 +1,24 @@
+name: Cloudflare Pages deploy (yedek tetikleyici)
+
+# Cloudflare Pages'in kendi Git entegrasyonu bu depoda gecmiste birden fazla
+# kez sessizce tetiklenmedi (push gitti, otomatik derleme baslamadi).
+# Bu is akisi, GitHub'in KENDI push olayina dayanip Cloudflare'in
+# deployments ucunu dogrudan cagirir - Cloudflare'in webhook/App
+# entegrasyonuna hic bagimli degildir. Cloudflare zaten depoya bagli
+# oldugu icin bu cagri en son commit'i ceker ve derler.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloudflare Pages dagitimini tetikle
+        run: |
+          curl -sf -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects/qdataline-urun/deployments" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -F "branch=master"
