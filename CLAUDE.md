@@ -548,3 +548,17 @@ gelecekte staging'e sık push olacaksa iş akışına `staging` dalı da eklenme
 Kanıt: `https://urun.qdataline.com/` → 200, `qdl-version.json` →
 `2026.09.16-4`, `qdl-env.json` → prod URL. Staging: staging anon key ile
 gerçek REST sorgusu 200 döndü.
+
+## "Sorun bildir" — kullanıcı tetiklemeli bildirim (16.09.2026)
+
+BOY'daki tek-modüllük pilot (bkz. BOY CLAUDE.md, commit `865d0cd`/`50d6457`/
+`7fc5f84`) `URS.html`'e uyarlandı — URS'nin BOY'a en yakın yapısı (aynı
+`LANG`/`I18N`/`t()`/`applyLangStatic()` deseni, aynı `openModal(html,genis)`/
+`closeModal()` deseni) sayesinde neredeyse birebir taşındı. Sağ altta sabit
+düğme, yalnız giriş sonrası görünür. Renk: modülün kendi `--leaf`(#65A30D)/
+`--leaf-d`(#84CC16) lime marka gradyanı (zaten `.btn-leaf` sınıfında
+kullanılıyordu — TASARIM_STANDARDI'ye göre platformdaki hiçbir başka modülle
+çakışmıyor). Modül kodu `MODUL_KODU='urun'` — canlı `qdl_modul_katalog` ile
+doğrulandı. Arka uç aynı: `public.qdl_musteri_bildirim_gonder`. ÖNEMLİ:
+çalışma kopyası yalnız `C:\temp\qdataline-urun` — Drive'daki "Reçete ve
+Spesifikasyon Yönetimi" klasörü bayat bir ayna, ona dokunulmadı.

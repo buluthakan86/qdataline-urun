@@ -282,6 +282,39 @@ tr:hover td{background:var(--mint-2)}
 
 <div class="overlay hidden" id="overlay"><div class="modal" id="modalBody"></div></div>
 
+<!-- Sorun bildir — kullanıcının bilerek "burada bir şey yanlış" dediği, hata
+     fırlatmayan durumlar için. Yalnız giriş yapılmışken görünür. BOY
+     pilotundan uyarlandı (bkz. BOY CLAUDE.md, commit 865d0cd/50d6457/7fc5f84). -->
+<style>
+  #sorunBildirBtn{
+    position:fixed; right:18px; z-index:190;
+    bottom:calc(18px + env(safe-area-inset-bottom,0px));
+    display:flex; align-items:center; gap:8px;
+    height:44px; padding:0 16px 0 12px; border-radius:22px;
+    background:linear-gradient(135deg, var(--leaf,#65A30D), var(--leaf-d,#84CC16));
+    color:var(--ink-on-accent,#1A2E05); border:1px solid rgba(255,255,255,.22);
+    box-shadow:0 6px 18px rgba(101,163,13,.35); cursor:pointer;
+    font:600 13px/1 system-ui,sans-serif; letter-spacing:.01em;
+    transition:box-shadow .15s, transform .15s;
+  }
+  #sorunBildirBtn:hover{transform:translateY(-1px); box-shadow:0 8px 22px rgba(101,163,13,.5);}
+  #sorunBildirBtn svg{flex:0 0 auto; width:20px; height:20px;}
+  #sorunBildirBtn .sbLbl{white-space:nowrap;}
+  @media (max-width:640px){
+    #sorunBildirBtn{padding:0; width:44px; justify-content:center;}
+    #sorunBildirBtn .sbLbl{display:none;}
+  }
+</style>
+<button id="sorunBildirBtn" class="hidden" onclick="sorunBildirAc()"
+        title="Sorun bildir" aria-label="Sorun bildir">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H10l-4.2 3.5a.6.6 0 0 1-.98-.46V16A2.5 2.5 0 0 1 4 13.5v-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M12 7v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="12" cy="12.7" r="1" fill="currentColor"/>
+  </svg>
+  <span class="sbLbl">Sorun bildir</span>
+</button>
+
 <script>
 "use strict";
 
@@ -381,6 +414,12 @@ function applyLangStatic(){
   document.getElementById('loBtn').textContent = t('Giriş Yap');
   document.getElementById('loLangBtn').textContent = LANG==='en'?'TR':'EN';
   var lb = document.getElementById('langBtn'); if(lb) lb.textContent = LANG==='en'?'TR':'EN';
+  var sb = document.getElementById('sorunBildirBtn');
+  if(sb){
+    var sbTxt = t('Sorun bildir');
+    sb.title = sbTxt; sb.setAttribute('aria-label', sbTxt);
+    var sbl = sb.querySelector('.sbLbl'); if(sbl) sbl.textContent = sbTxt;
+  }
 }
 var I18N = {
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış Yap':'Log Out',
@@ -390,6 +429,8 @@ var I18N = {
   'Kaydet':'Save','Vazgeç':'Cancel','Kapat':'Close','Sil':'Delete','Düzenle':'Edit','Ekle':'Add',
   'Yükleniyor…':'Loading…','Kayıt yok.':'No records.',
   '+ Yeni Ürün':'+ New Product','+ Yeni Reçete Kalemi':'+ New Recipe Item',
+  'Sorun bildir':'Report an issue','Ne fark ettiniz? Kısaca açıklayın.':'What did you notice? Briefly describe it.',
+  'Gönder':'Send','Gönderiliyor…':'Sending…',
 };
 
 // ---------------------------------------------------------------------------
@@ -504,7 +545,66 @@ async function doLogin(){
     btn.disabled = false; btn.textContent = t('Giriş Yap');
   }
 }
-async function doLogout(){ await sb.auth.signOut(); location.reload(); }
+async function doLogout(){
+  try{ document.getElementById('sorunBildirBtn').classList.add('hidden'); }catch(e){}
+  await sb.auth.signOut(); location.reload();
+}
+
+/* ============================ SORUN BİLDİR ============================ */
+function sorunBildirAc(){
+  openModal(
+    '<div class="mh"><h2>'+t('Sorun bildir')+'</h2><button class="btn btn-line" onclick="closeModal()">✕</button></div>'+
+    '<div class="mb">'+
+      '<label style="font-size:12.5px;color:var(--muted,#8FA06E)">'+t('Ne fark ettiniz? Kısaca açıklayın.')+'</label>'+
+      '<textarea id="sbAciklama" rows="4" maxlength="1000" placeholder="'+(LANG==='en'?'e.g. this number looks wrong, this button doesn\'t work as expected…':'Örn: bu ekrandaki sayı yanlış görünüyor, bu buton beklediğim gibi çalışmıyor…')+'" style="width:100%;margin-top:6px"></textarea>'+
+      '<div id="sbMsg" style="font-size:12.5px;margin-top:6px"></div>'+
+    '</div>'+
+    '<div class="mf">'+
+      '<button class="btn btn-line" onclick="closeModal()">'+t('Vazgeç')+'</button>'+
+      '<button class="btn btn-leaf" id="sbGonderBtn" onclick="sorunBildirGonder()">'+t('Gönder')+'</button>'+
+    '</div>'
+  );
+  setTimeout(function(){ var el=document.getElementById('sbAciklama'); if(el) el.focus(); }, 50);
+}
+async function sorunBildirGonder(){
+  var btn = document.getElementById('sbGonderBtn');
+  var msgEl = document.getElementById('sbMsg');
+  var aciklama = (document.getElementById('sbAciklama').value || '').trim();
+  if(!aciklama){ msgEl.textContent = LANG==='en'?'Please add a short description.':'Lütfen kısaca açıklayın.'; msgEl.style.color = '#F87171'; return; }
+  if(btn.disabled) return;                 // çift-tıklama koruması
+  btn.disabled = true;
+  var eskiMetin = btn.textContent;
+  btn.textContent = t('Gönderiliyor…');
+  msgEl.textContent = ''; msgEl.style.color = '';
+  var surum = null;
+  try{ surum = window.__qdlSurumOnbellek || null; }catch(e){}
+  try{
+    if(!surum){
+      var r = await fetch('/qdl-version.json', { cache:'no-store' });
+      if(r.ok){ var j = await r.json(); surum = j && j.surum; window.__qdlSurumOnbellek = surum; }
+    }
+  }catch(e){}
+  try{
+    var { error } = await sb.rpc('qdl_musteri_bildirim_gonder', {
+      p_modul: MODUL_KODU,
+      p_aciklama: aciklama,
+      p_sayfa: (location.pathname||'') + (location.hash||''),
+      p_surum: surum || null,
+      p_ua: navigator.userAgent || null
+    });
+    if(error) throw error;
+    msgEl.style.color = '#34D399';
+    msgEl.textContent = LANG==='en'?'Thanks, your report reached our team and will be reviewed.':'Teşekkürler, bildiriminiz ekibimize ulaştı. İncelenecek.';
+    btn.textContent = t('Gönder');
+    setTimeout(closeModal, 1400);
+  }catch(e){
+    try{ console.error('[qdl/urun] sorun-bildir', e); }catch(_){}
+    msgEl.style.color = '#F87171';
+    msgEl.textContent = LANG==='en'?'Could not send right now. Please try again shortly.':'Şu anda gönderilemedi. Lütfen birazdan tekrar deneyin.';
+    btn.disabled = false;
+    btn.textContent = eskiMetin;
+  }
+}
 
 async function afterLogin(user){
   cloudUser = user;
@@ -519,6 +619,7 @@ async function afterLogin(user){
   try{ await loadAll(); }catch(e){ document.getElementById('loErr').textContent = ursHata(e); return; }
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appRoot').classList.remove('hidden');
+  try{ document.getElementById('sorunBildirBtn').classList.remove('hidden'); }catch(e){}
   showView('anasayfa');
 }
 
