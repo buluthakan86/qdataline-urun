@@ -1142,7 +1142,7 @@ async function gorselYukle(urunId){
       document.getElementById('gorselWrap').insertAdjacentHTML('beforeend', gorselThumbHtml(yol, signed.data?signed.data.signedUrl:''));
     }
     msj.textContent = '';
-  }catch(e){ msj.textContent = 'Yükleme başarısız: '+(e.message||e); }
+  }catch(e){ msj.textContent = 'Yükleme başarısız: '+ursHata(e); }
   input.value = '';
 }
 async function gorselleriYukle(mevcutYollar){
@@ -1203,7 +1203,7 @@ async function musteriSpecYukle(urunId){
     }
     msj.textContent = '';
     wireMusteriSpecLinkleri();
-  }catch(e){ msj.textContent = 'Yükleme başarısız: '+(e.message||e); }
+  }catch(e){ msj.textContent = 'Yükleme başarısız: '+ursHata(e); }
   input.value = '';
 }
 function wireMusteriSpecLinkleri(){
@@ -1356,7 +1356,7 @@ async function aiBesinDegeriUret(urunId){
     document.getElementById('spProtein').value = data.protein_g!=null?data.protein_g:'';
     document.getElementById('spTuz').value = data.tuz_g!=null?data.tuz_g:'';
     msj.innerHTML = '<span style="color:var(--warn)">⚠ Bu değerler AI TAHMİNİDİR, resmi laboratuvar analizinin yerini tutmaz — kaydetmeden önce gözden geçirin.</span>';
-  }catch(e){ msj.textContent = 'AI çağrısı başarısız: '+(e.message||e); }
+  }catch(e){ msj.textContent = 'AI çağrısı başarısız: '+ursHata(e); }
   finally{ if(btn){ btn.disabled=false; btn.textContent='🤖 AI ile Oluştur'; } }
 }
 async function specKaydet(specId, urunId, durum){
@@ -1672,7 +1672,7 @@ async function firmaLogoYukle(){
     if(up.error) throw up.error;
     FIRMA_LOGO_YOLU = yol;
     msj.textContent = 'Yüklendi — Kaydet\'e basmayı unutmayın.';
-  }catch(e){ msj.textContent = 'Yükleme başarısız: '+(e.message||e); }
+  }catch(e){ msj.textContent = 'Yükleme başarısız: '+ursHata(e); }
 }
 async function firmaKaydet(){
   if(kilitliMi()) return;
