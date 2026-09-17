@@ -244,8 +244,8 @@ tr:hover td{background:var(--mint-2)}
       <div><label id="loEmailLbl">E-posta</label><input id="loEmail" type="email" style="width:100%" autocomplete="username"></div>
       <div><label id="loPassLbl">Şifre</label><input id="loPass" type="password" style="width:100%" autocomplete="current-password"></div>
       <div class="login-err" id="loErr"></div>
-      <button class="btn btn-leaf" style="width:100%" onclick="doLogin()" id="loBtn">Giriş Yap</button>
-      <button class="btn btn-line" style="width:100%" onclick="toggleLang()" id="loLangBtn">EN</button>
+      <button class="btn btn-leaf" style="width:100%" data-urs-act="doLogin" id="loBtn">Giriş Yap</button>
+      <button class="btn btn-line" style="width:100%" data-urs-act="toggleLang" id="loLangBtn">EN</button>
     </div>
   </div>
 </div>
@@ -267,10 +267,10 @@ tr:hover td{background:var(--mint-2)}
     <nav class="snav" id="snav"></nav>
     <div style="margin-top:auto; padding:12px 15px; border-top:1px solid var(--line-2); font-size:11.5px; color:var(--muted)">
       <div id="cloudUserLbl" style="margin-bottom:8px"></div>
-      <button class="btn btn-line" style="width:100%; margin-bottom:8px" onclick="toggleLang()" id="langBtn">EN</button>
-      <button class="btn btn-line" style="width:100%; margin-bottom:8px" onclick="toggleTheme()" id="themeBtn">🌙 Koyu / ☀ Açık</button>
-      <button class="btn btn-line" id="ursTurGosterBtn" onclick="startUrsTour()">🧭 Turu göster</button>
-      <button class="btn btn-line" style="width:100%" onclick="doLogout()">⏻ Çıkış Yap</button>
+      <button class="btn btn-line" style="width:100%; margin-bottom:8px" data-urs-act="toggleLang" id="langBtn">EN</button>
+      <button class="btn btn-line" style="width:100%; margin-bottom:8px" data-urs-act="toggleTheme" id="themeBtn">🌙 Koyu / ☀ Açık</button>
+      <button class="btn btn-line" id="ursTurGosterBtn" data-urs-act="startUrsTour">🧭 Turu göster</button>
+      <button class="btn btn-line" style="width:100%" data-urs-act="doLogout">⏻ Çıkış Yap</button>
     </div>
   </aside>
 
@@ -323,7 +323,7 @@ tr:hover td{background:var(--mint-2)}
   .tour-dots{ font-size:11px; color:var(--muted); margin-right:4px; }
   #ursTurGosterBtn{ width:100%; margin-bottom:8px; }
 </style>
-<button id="sorunBildirBtn" class="hidden" onclick="sorunBildirAc()"
+<button id="sorunBildirBtn" class="hidden" data-urs-act="sorunBildirAc"
         title="Sorun bildir" aria-label="Sorun bildir">
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H10l-4.2 3.5a.6.6 0 0 1-.98-.46V16A2.5 2.5 0 0 1 4 13.5v-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
@@ -485,9 +485,9 @@ var _kayitKilit = false;
 function kilitliMi(){ if(_kayitKilit) return true; _kayitKilit = true; return false; }
 function kilitAc(){ _kayitKilit = false; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-function emptyState(title, desc, ctaLabel, ctaOnclick){
+function emptyState(title, desc, ctaLabel, ctaAction, ctaData){
   var icon = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 14h3M8 17h6"/></svg>';
-  var cta = ctaLabel ? '<button class="btn btn-line es-cta" onclick="'+ctaOnclick+'">'+ctaLabel+'</button>' : '';
+  var cta = ctaLabel ? '<button class="btn btn-line es-cta" data-urs-act="'+ctaAction+'"'+(ctaData||'')+'>'+ctaLabel+'</button>' : '';
   return '<div class="empty-state">'+icon+'<div class="es-title">'+esc(title)+'</div><div class="es-desc">'+esc(desc)+'</div>'+cta+'</div>';
 }
 function fmt(n){ return (n==null||n==='') ? '—' : (Number(n)||0).toLocaleString('tr-TR', {maximumFractionDigits:2}); }
@@ -576,15 +576,15 @@ async function doLogout(){
 /* ============================ SORUN BİLDİR ============================ */
 function sorunBildirAc(){
   openModal(
-    '<div class="mh"><h2>'+t('Sorun bildir')+'</h2><button class="btn btn-line" onclick="closeModal()">✕</button></div>'+
+    '<div class="mh"><h2>'+t('Sorun bildir')+'</h2><button class="btn btn-line" data-urs-act="closeModal">✕</button></div>'+
     '<div class="mb">'+
       '<label style="font-size:12.5px;color:var(--muted,#8FA06E)">'+t('Ne fark ettiniz? Kısaca açıklayın.')+'</label>'+
       '<textarea id="sbAciklama" rows="4" maxlength="1000" placeholder="'+(LANG==='en'?'e.g. this number looks wrong, this button doesn\'t work as expected…':'Örn: bu ekrandaki sayı yanlış görünüyor, bu buton beklediğim gibi çalışmıyor…')+'" style="width:100%;margin-top:6px"></textarea>'+
       '<div id="sbMsg" style="font-size:12.5px;margin-top:6px"></div>'+
     '</div>'+
     '<div class="mf">'+
-      '<button class="btn btn-line" onclick="closeModal()">'+t('Vazgeç')+'</button>'+
-      '<button class="btn btn-leaf" id="sbGonderBtn" onclick="sorunBildirGonder()">'+t('Gönder')+'</button>'+
+      '<button class="btn btn-line" data-urs-act="closeModal">'+t('Vazgeç')+'</button>'+
+      '<button class="btn btn-leaf" id="sbGonderBtn" data-urs-act="sorunBildirGonder">'+t('Gönder')+'</button>'+
     '</div>'
   );
   setTimeout(function(){ var el=document.getElementById('sbAciklama'); if(el) el.focus(); }, 50);
@@ -803,17 +803,17 @@ function renderAnasayfa(){
     +'<div class="kpi"><div class="val" style="'+(sertUyariSayisi?'color:var(--crit)':'')+'">'+sertUyariSayisi+'</div><div class="lbl">Sertifika Uyarısı</div></div>'
     +'</div>'
     +(sertUyariSatirlar.length?('<div class="panel"><div class="ph"><h2>⚠ Dikkat Gerektiren Sertifikalar</h2><span class="sp" style="flex:1"></span>'
-      +(canEdit()?'<button class="btn btn-line btn-sm" onclick="showView(\'sertifikalar\')">Tüm Sertifikalar →</button>':'')+'</div>'
+      +(canEdit()?'<button class="btn btn-line btn-sm" data-urs-act="showView" data-view="sertifikalar">Tüm Sertifikalar →</button>':'')+'</div>'
     +'<div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto"><table><thead><tr><th>Ürün</th><th>Tür</th><th>Geçerlilik Bitiş</th><th>Durum</th></tr></thead><tbody>'
     +sertUyariSatirlar.map(function(s){
       var d = sertDurum(s);
-      return '<tr class="clk" onclick="showView(\'sertifikalar\')" style="cursor:pointer"><td><b>'+esc(urunAdi(s.urun_id))+'</b></td><td>'+esc(s.sertifika_turu)+'</td>'
+      return '<tr class="clk" data-urs-act="showView" data-view="sertifikalar" style="cursor:pointer"><td><b>'+esc(urunAdi(s.urun_id))+'</b></td><td>'+esc(s.sertifika_turu)+'</td>'
         +'<td>'+(s.gecerlilik_bitis?new Date(s.gecerlilik_bitis).toLocaleDateString('tr-TR'):'—')+'</td>'
         +'<td><span class="pill '+(d==='Süresi Doldu'?'crit':'warn')+'">'+esc(d)+'</span></td></tr>';
     }).join('')
     +'</tbody></table></div></div></div>'):'')
     +'<div class="panel"><div class="ph"><h2>Son Güncellenen Reçeteler</h2><span class="sp" style="flex:1"></span>'
-      +(canEdit()?'<button class="btn btn-line btn-sm" onclick="showView(\'receteler\')">Tüm Reçeteler →</button>':'')+'</div>'
+      +(canEdit()?'<button class="btn btn-line btn-sm" data-urs-act="showView" data-view="receteler">Tüm Reçeteler →</button>':'')+'</div>'
     +'<div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(recSatirlar?'<table><thead><tr><th>Ürün</th><th>Hammadde Sayısı</th><th>Alerjenler</th></tr></thead><tbody>'+recSatirlar+'</tbody></table>'
       :'<div class="empty">Henüz bir ürüne reçete girilmedi. "Ürünler" ekranından bir ürün ekleyip Reçeteler\'den formülasyonunu girebilirsiniz.</div>')
@@ -838,19 +838,19 @@ function renderUrunler(){
   }).join('');
   return '<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Ürün</th><th>Kategori</th><th>Durum</th><th>Reçete</th><th>Spesifikasyon</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :emptyState('Henüz ürün eklenmedi', 'İlk ürününüzü ekleyerek reçete ve spesifikasyon yönetimine başlayın.', t('+ Yeni Ürün'), 'openUrunForm()'))
+      :emptyState('Henüz ürün eklenmedi', 'İlk ürününüzü ekleyerek reçete ve spesifikasyon yönetimine başlayın.', t('+ Yeni Ürün'), 'openUrunForm'))
     +'</div></div></div>';
 }
 function openUrunForm(id){
   var u = id?state.urunler.find(function(x){return x.id===id;}):null;
-  openModal('<div class="mh"><b>'+(u?'Ürünü Düzenle':'Yeni Ürün')+'</b><button class="x" onclick="closeModal()">&times;</button></div>'
+  openModal('<div class="mh"><b>'+(u?'Ürünü Düzenle':'Yeni Ürün')+'</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb">'
     +'<div><label>Ürün Adı *</label><input id="urAd" value="'+esc(u?u.ad:'')+'"></div>'
     +'<div class="grid2"><div><label>Kategori</label><input id="urKat" value="'+esc(u?u.kategori:'')+'"></div>'
     +'<div><label>Durum</label><select id="urDurum"><option'+(!u||u.durum==='Aktif'?' selected':'')+'>Aktif</option><option'+(u&&u.durum==='Pasif'?' selected':'')+'>Pasif</option></select></div></div>'
     +'<div><label>Açıklama</label><textarea id="urAciklama" rows="2">'+esc(u?u.aciklama:'')+'</textarea></div>'
     +'<div class="login-err" id="urHata"></div>'
-    +'</div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Vazgeç</button><button class="btn btn-leaf" onclick="urunKaydet(\''+(id||'')+'\')">Kaydet</button></div>');
+    +'</div><div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Vazgeç</button><button class="btn btn-leaf" data-urs-act="urunKaydet" data-id="'+(id||'')+'">Kaydet</button></div>');
 }
 async function urunKaydet(id){
   if(kilitliMi()) return;
@@ -892,7 +892,7 @@ function renderReceteler(){
   return '<div class="note">Reçetedeki hammaddeleri TGK kuralı gereği <b>azalan ağırlık sırasıyla</b> girin — bu sıra, spesifikasyondaki "içindekiler" listesinin sırasını belirler.</div>'
     +'<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Ürün</th><th>Hammadde Sayısı</th><th>Toplam Oran</th><th>Alerjenler</th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :emptyState('Henüz aktif ürün yok', 'Reçete girebilmek için önce "Ürünler" ekranından bir ürün ekleyin.', '+ Ürünler’e Git', "showView('urunler')"))
+      :emptyState('Henüz aktif ürün yok', 'Reçete girebilmek için önce "Ürünler" ekranından bir ürün ekleyin.', '+ Ürünler’e Git', 'showView', ' data-view="urunler"'))
     +'</div></div></div>';
 }
 function openReceteDetay(urunId){
@@ -908,19 +908,19 @@ function openReceteDetay(urunId){
       +'<td>'+(esc(r.tedarikci_adi)||'<span class="muted">—</span>')+'</td>'
       +'<td>'+((r.alerjenler||[]).length?r.alerjenler.map(function(a){return '<span class="pill warn" style="margin-right:3px;font-size:10px">'+esc(a)+'</span>';}).join(''):'<span class="muted">—</span>')+'</td>'
       +'<td>'+(r.proses_talimati?('<span class="ek-link" style="cursor:default" title="'+esc(r.proses_talimati)+'">📋</span>'):'<span class="muted">—</span>')+'</td>'
-      +'<td>'+(ce?'<button class="btn btn-line btn-sm" onclick="openReceteKalemForm(\''+urunId+'\',\''+r.id+'\')">✏️</button> <button class="btn btn-danger btn-sm" onclick="receteKalemSil(\''+r.id+'\',\''+urunId+'\')">🗑</button>':'')+'</td>'
+      +'<td>'+(ce?'<button class="btn btn-line btn-sm" data-urs-act="openReceteKalemForm" data-urunid="'+urunId+'" data-id="'+r.id+'">✏️</button> <button class="btn btn-danger btn-sm" data-urs-act="receteKalemSil" data-id="'+r.id+'" data-urunid="'+urunId+'">🗑</button>':'')+'</td>'
       +'</tr>';
   }).join('');
-  openModal('<div class="mh"><b>Reçete — '+esc(u?u.ad:'')+'</b><button class="x" onclick="closeModal()">&times;</button></div>'
+  openModal('<div class="mh"><b>Reçete — '+esc(u?u.ad:'')+'</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb">'
-    +(ce?'<button class="btn btn-line btn-sm" onclick="openReceteKalemForm(\''+urunId+'\')" style="justify-self:start">+ Hammadde Ekle</button>':'')
+    +(ce?'<button class="btn btn-line btn-sm" data-urs-act="openReceteKalemForm" data-urunid="'+urunId+'" style="justify-self:start">+ Hammadde Ekle</button>':'')
     +'<div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>#</th><th>Hammadde</th><th>Oran</th><th>1 Ton İçin</th><th>Tedarikçi</th><th>Alerjenler</th><th>Proses</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
       :'<div class="empty">Bu ürün için henüz hammadde girilmedi.</div>')
     +'</div>'
     +(kalemler.length?'<div style="text-align:right;font-size:12px" class="muted">Toplam: '+fmt(kalemler.reduce(function(s,r){return s+(Number(r.oran_yuzde)||0);},0))+'% · 1 ton için toplam: '+fmt(kalemler.reduce(function(s,r){return s+(Number(r.oran_yuzde)||0);},0)*10)+' kg</div>':'')
-    +'</div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Kapat</button>'
-    +(specOf(urunId)?'<button class="btn btn-leaf" onclick="closeModal(); openSpecDetay(\''+specOf(urunId).id+'\')">Spesifikasyonu Aç →</button>':'<button class="btn btn-leaf" onclick="closeModal(); openSpecDetay(null,\''+urunId+'\')">+ Spesifikasyon Oluştur</button>')
+    +'</div><div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Kapat</button>'
+    +(specOf(urunId)?'<button class="btn btn-leaf" data-urs-act="openSpecDetayVeKapat" data-id="'+specOf(urunId).id+'">Spesifikasyonu Aç →</button>':'<button class="btn btn-leaf" data-urs-act="openSpecDetayVeKapat" data-urunid="'+urunId+'">+ Spesifikasyon Oluştur</button>')
     +'</div>');
 }
 function openReceteKalemForm(urunId, kalemId){
@@ -929,7 +929,7 @@ function openReceteKalemForm(urunId, kalemId){
     var checked = k && (k.alerjenler||[]).indexOf(a)>-1;
     return '<label class="chk-row"><input type="checkbox" value="'+esc(a)+'" '+(checked?'checked':'')+' class="recAlerjenChk"> '+esc(a)+'</label>';
   }).join('');
-  openModal('<div class="mh"><b>'+(k?'Hammaddeyi Düzenle':'Hammadde Ekle')+'</b><button class="x" onclick="closeModal()">&times;</button></div>'
+  openModal('<div class="mh"><b>'+(k?'Hammaddeyi Düzenle':'Hammadde Ekle')+'</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb">'
     +'<div class="grid2"><div><label>Hammadde Adı *</label><input id="rkAd" value="'+esc(k?k.hammadde_adi:'')+'"></div>'
     +'<div><label>Oran (%)</label><input id="rkOran" type="number" step="0.01" min="0" max="100" value="'+(k&&k.oran_yuzde!=null?k.oran_yuzde:'')+'"></div></div>'
@@ -938,7 +938,7 @@ function openReceteKalemForm(urunId, kalemId){
     +'<div><label>Not (opsiyonel)</label><input id="rkNot" value="'+esc(k?k.notlar:'')+'"></div>'
     +'<div><label>İçerdiği Alerjenler (varsa)</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">'+alerjenChecks+'</div></div>'
     +'<div class="login-err" id="rkHata"></div>'
-    +'</div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Vazgeç</button><button class="btn btn-leaf" onclick="receteKalemKaydet(\''+urunId+'\',\''+(kalemId||'')+'\')">Kaydet</button></div>');
+    +'</div><div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Vazgeç</button><button class="btn btn-leaf" data-urs-act="receteKalemKaydet" data-urunid="'+urunId+'" data-id="'+(kalemId||'')+'">Kaydet</button></div>');
 }
 async function receteKalemKaydet(urunId, kalemId){
   if(kilitliMi()) return;
@@ -980,7 +980,7 @@ function renderSpesifikasyonlar(){
   }).join('');
   return '<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Spec Kodu</th><th>Ürün</th><th>Gıda Adı</th><th>Versiyon</th><th>Durum</th><th>Son Güncelleme</th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :emptyState('Henüz spesifikasyon oluşturulmadı', '"Ürünler" ekranından bir ürün için ürün spesifikasyonu oluşturabilirsiniz.', '+ Ürünler’e Git', "showView('urunler')"))
+      :emptyState('Henüz spesifikasyon oluşturulmadı', '"Ürünler" ekranından bir ürün için ürün spesifikasyonu oluşturabilirsiniz.', '+ Ürünler’e Git', 'showView', ' data-view="urunler"'))
     +'</div></div></div>';
 }
 
@@ -1012,7 +1012,7 @@ function ozelAlanSatiriHtml(ad, deger){
   return '<div class="grid2 ozelAlanRow" style="margin-bottom:4px">'
     +'<input class="oaAd" placeholder="Alan adı (ör. Glüten Testi Yöntemi)" value="'+esc(ad||'')+'">'
     +'<div style="display:flex;gap:6px"><input class="oaDeger" placeholder="Değer" value="'+esc(deger||'')+'" style="flex:1">'
-    +'<button type="button" class="x" onclick="this.closest(\'.ozelAlanRow\').remove()" title="Kaldır">&times;</button></div></div>';
+    +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="ozelAlanRow" title="Kaldır">&times;</button></div></div>';
 }
 function ozelAlanEkle(){
   var c = document.getElementById('ozelAlanlarWrap'); if(!c) return;
@@ -1031,7 +1031,7 @@ function parametreSatiriHtml(cls, p){
     +'<input class="pMin" placeholder="Min (ör. 10)" value="'+esc(p.min||'')+'">'
     +'<input class="pMax" placeholder="Max (ör. 10,5)" value="'+esc(p.max||'')+'">'
     +'<div style="display:flex;gap:6px"><input class="pBirim" placeholder="Birim (%, kob/g...)" value="'+esc(p.birim||'')+'" style="flex:1">'
-    +'<button type="button" class="x" onclick="this.closest(\'.'+cls+'Row\').remove()" title="Kaldır">&times;</button></div></div>';
+    +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="'+cls+'Row" title="Kaldır">&times;</button></div></div>';
 }
 function parametreEkle(cls, wrapId){
   var c = document.getElementById(wrapId); if(!c) return;
@@ -1052,7 +1052,7 @@ function duyusalSatiriHtml(kriter, aciklama){
   return '<div class="grid2 duyusalRow" style="margin-bottom:4px">'
     +'<input class="dsKriter" value="'+esc(kriter||'')+'" placeholder="Kriter (ör. Tat)">'
     +'<div style="display:flex;gap:6px"><input class="dsAciklama" value="'+esc(aciklama||'')+'" placeholder="Açıklama (ör. Karakteristik, yabancı tat yok)" style="flex:1">'
-    +'<button type="button" class="x" onclick="this.closest(\'.duyusalRow\').remove()" title="Kaldır">&times;</button></div></div>';
+    +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="duyusalRow" title="Kaldır">&times;</button></div></div>';
 }
 function duyusalEkle(){
   var c = document.getElementById('duyusalWrap'); if(!c) return;
@@ -1072,7 +1072,7 @@ var YASAL_ONERILEN = [
 function yasalSatiriHtml(deger){
   return '<div class="yasalRow" style="display:flex;gap:6px;margin-bottom:4px">'
     +'<input class="ylAd" value="'+esc(deger||'')+'" placeholder="ör. Türk Gıda Kodeksi Bulaşanlar Yönetmeliği" style="flex:1">'
-    +'<button type="button" class="x" onclick="this.closest(\'.yasalRow\').remove()" title="Kaldır">&times;</button></div>';
+    +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="yasalRow" title="Kaldır">&times;</button></div>';
 }
 function yasalEkle(deger){
   var c = document.getElementById('yasalWrap'); if(!c) return;
@@ -1090,7 +1090,7 @@ function gramajSatiriHtml(g){
     +'<input class="gmPaletOlcu" placeholder="Palet Ölçüsü (ör. 120x80 cm)" value="'+esc(g.palet_olcusu||'')+'">'
     +'<input class="gmPaletAdet" type="number" placeholder="Palette Adet" value="'+(g.palette_adet!=null?g.palette_adet:'')+'">'
     +'<div style="display:flex;gap:6px"><input class="gmNot" placeholder="Not (ops.)" value="'+esc(g.not||'')+'" style="flex:1">'
-    +'<button type="button" class="x" onclick="this.closest(\'.gramajRow\').remove()" title="Kaldır">&times;</button></div></div>';
+    +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="gramajRow" title="Kaldır">&times;</button></div></div>';
 }
 function gramajEkle(){
   var c = document.getElementById('gramajWrap'); if(!c) return;
@@ -1103,7 +1103,7 @@ function gramajEkle(){
 function ambalajSatiriHtml(deger){
   return '<div class="ambalajRow" style="display:flex;gap:6px;margin-bottom:4px">'
     +'<input class="amAd" value="'+esc(deger||'')+'" placeholder="ör. OPP-CPP, PE, Kraft Torba" style="flex:1">'
-    +'<button type="button" class="x" onclick="this.closest(\'.ambalajRow\').remove()" title="Kaldır">&times;</button></div>';
+    +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="ambalajRow" title="Kaldır">&times;</button></div>';
 }
 function ambalajEkle(){
   var c = document.getElementById('ambalajWrap'); if(!c) return;
@@ -1117,7 +1117,7 @@ var SPEC_GORSEL_YOLLARI = [];
 function gorselThumbHtml(yol, url){
   return '<div class="gorselThumb" data-yol="'+esc(yol)+'" style="position:relative;display:inline-block;margin:0 8px 8px 0">'
     +'<img src="'+esc(url||'')+'" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block">'
-    +'<button type="button" onclick="gorselSil(this)" title="Kaldır" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--crit);cursor:pointer;font-size:14px;line-height:1">&times;</button></div>';
+    +'<button type="button" data-urs-act="gorselSil" title="Kaldır" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--crit);cursor:pointer;font-size:14px;line-height:1">&times;</button></div>';
 }
 function gorselSil(btn){
   var wrap = btn.closest('.gorselThumb');
@@ -1170,7 +1170,7 @@ function musteriSpecSatiriHtml(d){
     +'<span style="font-size:16px">📄</span>'
     +'<a href="#" class="ek-link musteriSpecIndir" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">'+esc(d.ad||d.yol||'Dosya')+'</a>'
     +'<input class="musteriSpecAciklama" placeholder="Açıklama (ops.)" value="'+esc(d.aciklama||'')+'" style="max-width:220px; font-size:11.5px; padding:5px 8px">'
-    +'<button type="button" class="x" onclick="musteriSpecSil(this)" title="Kaldır">&times;</button></div>';
+    +'<button type="button" class="x" data-urs-act="musteriSpecSil" title="Kaldır">&times;</button></div>';
 }
 function musteriSpecSil(btn){
   var row = btn.closest('.musteriSpecRow');
@@ -1235,7 +1235,7 @@ function openSpecDetay(specId, urunIdForNew){
   }).join('') : '<div class="empty">Henüz versiyon geçmişi yok.</div>';
 
   openModal('<div class="mh"><b>'+(s?('Spesifikasyon — '+esc(s.spec_kodu||'')):'Yeni Spesifikasyon')+' · '+esc(u?u.ad:'')+'</b>'
-    +'<span>'+(s?(s.durum==='Onaylı'?'<span class="pill ok">Onaylı</span>':'<span class="pill warn">Taslak</span>'):'')+' <button class="x" onclick="closeModal()">&times;</button></span></div>'
+    +'<span>'+(s?(s.durum==='Onaylı'?'<span class="pill ok">Onaylı</span>':'<span class="pill warn">Taslak</span>'):'')+' <button class="x" data-urs-act="closeModal">&times;</button></span></div>'
     +'<div class="mb">'
 
     +'<div class="sec-h">TGK Madde 9 — Zorunlu Bilgiler</div>'
@@ -1253,20 +1253,20 @@ function openSpecDetay(specId, urunIdForNew){
     +'<div class="sec-h">Gıda Güvenliği / BRCGS Ek Bilgileri</div>'
     +'<div class="grid2"><div><label>Hedef Tüketici Grubu</label><input id="spHedefGrup" value="'+esc(f.hedef_tuketici_grubu)+'" placeholder="ör. Genel tüketici / Çocuk / Alerjik hassas grup"></div>'
     +'<div><label>Taşıma Koşulları</label><input id="spTasima" value="'+esc(f.tasima_kosullari)+'" placeholder="ör. 4°C altında soğuk zincirle taşınmalıdır"></div></div>'
-    +'<div><label>Alerjen Beyanı <button type="button" class="ek-link" style="font-size:11px" onclick="alerjenBeyaniDoldur(\''+urunId+'\')">reçeteden otomatik doldur</button></label><textarea id="spAlerjenBeyani" rows="4">'+esc(f.alerjen_beyani)+'</textarea></div>'
+    +'<div><label>Alerjen Beyanı <button type="button" class="ek-link" style="font-size:11px" data-urs-act="alerjenBeyaniDoldur" data-urunid="'+urunId+'">reçeteden otomatik doldur</button></label><textarea id="spAlerjenBeyani" rows="4">'+esc(f.alerjen_beyani)+'</textarea></div>'
     +'<div><label>Çapraz Bulaşma Riski</label><textarea id="spCapraz" rows="3">'+esc(f.capraz_bulasma_riski)+'</textarea></div>'
 
     +'<div class="sec-h">Gramaj / Palet Seçenekleri <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(aynı ürünün farklı ambalaj gramajları için ayrı palet bilgisi)</span></div>'
     +'<div id="gramajWrap">'+(f.gramaj_secenekleri.length?f.gramaj_secenekleri.map(gramajSatiriHtml).join(''):'')+'</div>'
-    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="gramajEkle()">+ Gramaj/Palet Ekle</button>':'')
+    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="gramajEkle">+ Gramaj/Palet Ekle</button>':'')
 
     +'<div class="sec-h">Ambalaj Malzeme Seçenekleri</div>'
     +'<div id="ambalajWrap">'+(f.ambalaj_secenekleri.length?f.ambalaj_secenekleri.map(ambalajSatiriHtml).join(''):'')+'</div>'
-    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="ambalajEkle()">+ Ambalaj Seçeneği Ekle</button>':'')
+    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="ambalajEkle">+ Ambalaj Seçeneği Ekle</button>':'')
     +'<div><label>Ambalaj Spesifikasyonu (boyut/katman detayı)</label><textarea id="spAmbalaj" rows="3">'+esc(f.ambalaj_spesifikasyonu)+'</textarea></div>'
 
     +'<div class="sec-h">TGK Madde 35 — Beslenme Bildirimi (100 g/ml başına) '
-      +(ce?'<button type="button" class="btn btn-line btn-sm" style="margin-left:8px" onclick="aiBesinDegeriUret(\''+urunId+'\')" id="aiBesinBtn">🤖 AI ile Oluştur</button>':'')+'</div>'
+      +(ce?'<button type="button" class="btn btn-line btn-sm" style="margin-left:8px" data-urs-act="aiBesinDegeriUret" data-urunid="'+urunId+'" id="aiBesinBtn">🤖 AI ile Oluştur</button>':'')+'</div>'
     +'<div id="aiBesinMesaj" class="muted" style="font-size:11.5px"></div>'
     +'<div class="grid4"><div><label>Enerji (kcal)</label><input id="spEnerji" type="number" step="0.1" value="'+(f.enerji_kcal!=null?f.enerji_kcal:'')+'"></div>'
     +'<div><label>Yağ (g)</label><input id="spYag" type="number" step="0.1" value="'+(f.yag_g!=null?f.yag_g:'')+'"></div>'
@@ -1279,40 +1279,40 @@ function openSpecDetay(specId, urunIdForNew){
 
     +'<div class="sec-h">Fiziksel-Kimyasal Parametreler <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ör. Nem — Max 10,5 % / Protein — Min %10)</span></div>'
     +'<div id="fkParamWrap">'+(f.fiziksel_kimyasal_parametreler.length?f.fiziksel_kimyasal_parametreler.map(function(p){return parametreSatiriHtml('fkParam',p);}).join(''):'')+'</div>'
-    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="parametreEkle(\'fkParam\',\'fkParamWrap\')">+ Parametre Ekle</button>':'')
+    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="parametreEkle" data-a="fkParam" data-b="fkParamWrap">+ Parametre Ekle</button>':'')
     +'<div><label>Ek Not (opsiyonel, serbest metin)</label><textarea id="spFizKim" rows="2">'+esc(f.fiziksel_kimyasal_limitler)+'</textarea></div>'
 
     +'<div class="sec-h">Mikrobiyolojik Parametreler</div>'
     +'<div id="mikroParamWrap">'+(f.mikrobiyolojik_parametreler.length?f.mikrobiyolojik_parametreler.map(function(p){return parametreSatiriHtml('mikroParam',p);}).join(''):'')+'</div>'
-    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="parametreEkle(\'mikroParam\',\'mikroParamWrap\')">+ Parametre Ekle</button>':'')
+    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="parametreEkle" data-a="mikroParam" data-b="mikroParamWrap">+ Parametre Ekle</button>':'')
     +'<div><label>Ek Not (opsiyonel, serbest metin)</label><textarea id="spMikro" rows="2">'+esc(f.mikrobiyolojik_limitler)+'</textarea></div>'
 
     +'<div class="sec-h">Duyusal Kriterler</div>'
     +'<div id="duyusalWrap">'+f.duyusal_kriterler_yapilandirilmis.map(function(d){return duyusalSatiriHtml(d.kriter,d.aciklama);}).join('')+'</div>'
-    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="duyusalEkle()">+ Kriter Ekle</button>':'')
+    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="duyusalEkle">+ Kriter Ekle</button>':'')
 
     +'<div class="sec-h">Yasal Dayanaklar <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(bu spesifikasyonun uyduğu mevzuat/tebliğler)</span></div>'
     +'<div id="yasalWrap">'+(f.yasal_dayanaklar.length?f.yasal_dayanaklar.map(yasalSatiriHtml).join(''):'')+'</div>'
     +(ce?('<div style="display:flex;gap:6px;flex-wrap:wrap">'
-      +'<button type="button" class="btn btn-line btn-sm" onclick="yasalEkle(\'\')">+ Boş Ekle</button>'
-      +YASAL_ONERILEN.map(function(y){return '<button type="button" class="btn btn-line btn-sm" onclick="yasalEkle('+"'"+y.replace(/'/g,"\\'")+"'"+')">+ '+esc(y)+'</button>';}).join('')
+      +'<button type="button" class="btn btn-line btn-sm" data-urs-act="yasalEkle">+ Boş Ekle</button>'
+      +YASAL_ONERILEN.map(function(y){return '<button type="button" class="btn btn-line btn-sm" data-urs-act="yasalEkle" data-value="'+esc(y)+'">+ '+esc(y)+'</button>';}).join('')
       +'</div>'):'')
 
     +'<div class="sec-h">Ürün Görselleri</div>'
     +'<div id="gorselWrap" style="display:flex;flex-wrap:wrap"></div>'
     +(ce?('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="file" id="spGorselInput" accept="image/*" multiple>'
-      +'<button type="button" class="btn btn-line btn-sm" onclick="gorselYukle(\''+urunId+'\')">Yükle</button>'
+      +'<button type="button" class="btn btn-line btn-sm" data-urs-act="gorselYukle" data-urunid="'+urunId+'">Yükle</button>'
       +'<span id="spGorselMsj" class="muted" style="font-size:11.5px"></span></div>'):'')
 
     +'<div class="sec-h">Müşteri Spesifikasyonları <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(müşterinin gönderdiği PDF/Word/Excel istek/spesifikasyon dosyaları)</span></div>'
     +'<div id="musteriSpecWrap"></div>'
     +(ce?('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="file" id="spMusteriSpecInput" multiple>'
-      +'<button type="button" class="btn btn-line btn-sm" onclick="musteriSpecYukle(\''+urunId+'\')">Yükle</button>'
+      +'<button type="button" class="btn btn-line btn-sm" data-urs-act="musteriSpecYukle" data-urunid="'+urunId+'">Yükle</button>'
       +'<span id="spMusteriSpecMsj" class="muted" style="font-size:11.5px"></span></div>'):'')
 
     +'<div class="sec-h">Özel Alanlar <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ürün kategorisine göre ek bilgi — ör. raf ömrü testi, özel müşteri şartı)</span></div>'
     +'<div id="ozelAlanlarWrap">'+(f.ozel_alanlar.length?f.ozel_alanlar.map(function(oa){return ozelAlanSatiriHtml(oa.ad, oa.deger);}).join(''):'')+'</div>'
-    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" onclick="ozelAlanEkle()">+ Özel Alan Ekle</button>':'')
+    +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="ozelAlanEkle">+ Özel Alan Ekle</button>':'')
 
     +(s&&s.durum==='Onaylı'?('<div class="sec-h">Onay Bilgisi</div><div class="note">'+esc(s.onaylayan_ad||'—')+(s.onaylayan_rol?' — '+esc(s.onaylayan_rol):'')+' tarafından '+(s.onay_tarihi?new Date(s.onay_tarihi).toLocaleString('tr-TR'):'—')+' tarihinde onaylandı.'+(f.sonraki_inceleme_tarihi?(' Sonraki yıllık gözden geçirme: <b>'+new Date(f.sonraki_inceleme_tarihi).toLocaleDateString('tr-TR')+'</b>.'):'')+'</div>'):'')
     +(s?('<div class="sec-h">Kayıt Bilgisi</div><div class="muted" style="font-size:12px">Oluşturulma: '+(s.created_at?new Date(s.created_at).toLocaleDateString('tr-TR'):'—')+' · Son Revizyon: '+(s.updated_at?new Date(s.updated_at).toLocaleDateString('tr-TR'):'—')+'</div>'):'')
@@ -1322,11 +1322,11 @@ function openSpecDetay(specId, urunIdForNew){
 
     +'<div class="sec-h">Versiyon Geçmişi</div>'+verHtml
     +'</div><div class="mf">'
-    +'<button class="btn btn-line" onclick="closeModal()">Kapat</button>'
-    +(s?'<button class="btn btn-line" onclick="specYazdir(\''+s.id+'\')">🖨 PDF / Yazdır</button> <button class="btn btn-line" onclick="etiketMetniGoster(\''+s.id+'\')">🏷 Etiket Metni</button>':'')
-    +(ce?('<button class="btn btn-line" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Taslak\')">Taslak Olarak Kaydet</button>'
-        +'<button class="btn btn-leaf" onclick="specKaydet(\''+(s?s.id:'')+'\',\''+urunId+'\',\'Onaylı\')">Onayla ve Kaydet</button>'):'')
-    +(ce&&s&&s.durum==='Taslak'?('<button class="btn btn-line" id="spOnayEpostaBtn" onclick="specOnayEmailGonder(\''+s.id+'\')" title="Giriş yapmadan, e-postadaki linkten Onayla/Reddet kararı verebilir">📧 Onay İçin E-posta Gönder</button>'):'')
+    +'<button class="btn btn-line" data-urs-act="closeModal">Kapat</button>'
+    +(s?'<button class="btn btn-line" data-urs-act="specYazdir" data-id="'+s.id+'">🖨 PDF / Yazdır</button> <button class="btn btn-line" data-urs-act="etiketMetniGoster" data-id="'+s.id+'">🏷 Etiket Metni</button>':'')
+    +(ce?('<button class="btn btn-line" data-urs-act="specKaydet" data-id="'+(s?s.id:'')+'" data-urunid="'+urunId+'" data-durum="Taslak">Taslak Olarak Kaydet</button>'
+        +'<button class="btn btn-leaf" data-urs-act="specKaydet" data-id="'+(s?s.id:'')+'" data-urunid="'+urunId+'" data-durum="Onaylı">Onayla ve Kaydet</button>'):'')
+    +(ce&&s&&s.durum==='Taslak'?('<button class="btn btn-line" id="spOnayEpostaBtn" data-urs-act="specOnayEmailGonder" data-id="'+s.id+'" title="Giriş yapmadan, e-postadaki linkten Onayla/Reddet kararı verebilir">📧 Onay İçin E-posta Gönder</button>'):'')
     +'</div>', true);
   SPEC_GORSEL_YOLLARI = (f.gorsel_yollari||[]).slice();
   gorselleriYukle(SPEC_GORSEL_YOLLARI);
@@ -1444,7 +1444,7 @@ async function specYazdir(specId){
     + '<div style="font-weight:700;font-size:14px">'+esc(fb.firma_adi||'')+'</div>'
     + (fb.adres?'<div style="font-size:11px;color:#5D7238">'+esc(fb.adres)+'</div>':'')
     + '<div style="clear:both;border-bottom:2px solid #65A30D;margin:8px 0 14px"></div>';
-  var html = '<div class="mh"><b>Spesifikasyon — Yazdırma Görünümü</b><button class="x" onclick="closeModal()">&times;</button></div>'
+  var html = '<div class="mh"><b>Spesifikasyon — Yazdırma Görünümü</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb"><div class="rep-inner">'
     +(fb.firma_adi||fb.logo_url?baslik:'')
     +'<h2>'+esc(s.gida_adi||u.ad)+'</h2>'
@@ -1496,7 +1496,7 @@ async function specYazdir(specId){
     +((s.musteri_spesifikasyonlari&&s.musteri_spesifikasyonlari.length)?('<table><tr><th colspan="2">Müşteri Spesifikasyonu Referans Dosyaları</th></tr>'
       +s.musteri_spesifikasyonlari.map(function(d){return '<tr><td>'+esc(d.ad||'—')+'</td><td>'+esc(d.aciklama||'—')+'</td></tr>';}).join('')+'</table>'):'')
     +'<div style="margin-top:16px; font-size:11px; color:#5D7238">Bu belge '+new Date().toLocaleDateString('tr-TR')+' tarihinde QDataLine Reçete ve Spesifikasyon Yönetimi\'nden alınmıştır — v'+s.versiyon_no+'.</div>'
-    +'</div></div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Kapat</button><button class="btn btn-leaf" onclick="window.print()">🖨 Yazdır</button></div>';
+    +'</div></div><div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Kapat</button><button class="btn btn-leaf" data-urs-act="printPage">🖨 Yazdır</button></div>';
   openModal(html);
 }
 
@@ -1526,10 +1526,10 @@ function etiketMetniGoster(specId){
     +'<p><b>Menşei Ülke:</b> '+esc(s.mensei_ulke||'—')+'</p>'
     +'<p><b>Üretici:</b> '+esc(s.isletme_adi_adres||'—')+(s.isletme_kayit_no?(' — Kayıt No: '+esc(s.isletme_kayit_no)):'')+'</p>'
     +(s.kullanim_talimati?('<p><b>Kullanım Talimatı:</b> '+esc(s.kullanim_talimati)+'</p>'):'');
-  openModal('<div class="mh"><b>Etiket Metni — '+esc(u.ad)+'</b><button class="x" onclick="closeModal()">&times;</button></div>'
+  openModal('<div class="mh"><b>Etiket Metni — '+esc(u.ad)+'</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb"><div class="note">Bu metin spesifikasyon verisinden otomatik türetilmiştir — ambalaja basmadan önce mutlaka gözden geçirin ve resmi tasarım/baskı sürecinize uyarlayın.</div>'
     +'<div class="rep-inner" id="etiketMetniIcerik" style="font-size:13px; line-height:1.7">'+metin+'</div></div>'
-    +'<div class="mf"><button class="btn btn-line" onclick="closeModal()">Kapat</button><button class="btn btn-line" onclick="etiketMetniKopyala()">📋 Metni Kopyala</button><button class="btn btn-leaf" onclick="window.print()">🖨 Yazdır</button></div>');
+    +'<div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Kapat</button><button class="btn btn-line" data-urs-act="etiketMetniKopyala">📋 Metni Kopyala</button><button class="btn btn-leaf" data-urs-act="printPage">🖨 Yazdır</button></div>');
 }
 function etiketMetniKopyala(){
   var el = document.getElementById('etiketMetniIcerik'); if(!el) return;
@@ -1579,10 +1579,10 @@ function renderSertifikalar(){
   var urunSecenekleri = state.urunler.filter(function(u){return u.durum==='Aktif';})
     .map(function(u){return '<option value="'+u.id+'">'+esc(u.ad)+'</option>';}).join('');
   return '<div class="toolbar">'+(canEdit()?('<select id="sertUrunSec" style="min-width:220px">'+(urunSecenekleri||'<option value="">Önce bir ürün ekleyin</option>')+'</select>'
-    +'<button class="btn btn-leaf" onclick="openSertForm(null, document.getElementById(\'sertUrunSec\').value)">+ Sertifika Ekle</button>'):'')+'</div>'
+    +'<button class="btn btn-leaf" data-urs-act="openSertFormYeni">+ Sertifika Ekle</button>'):'')+'</div>'
     +'<div class="panel"><div class="pb" style="padding:0"><div class="tbl-wrap" style="overflow-x:auto">'
     +(rows?'<table><thead><tr><th>Ürün</th><th>Tür</th><th>Sertifika No</th><th>Veren Kurum</th><th>Geçerlilik Bitiş</th><th>Durum</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
-      :emptyState('Henüz sertifika eklenmedi', 'Ürünleriniz için Helal, Organik, BRCGS gibi sertifikaları ekleyip takip edin.', (urunSecenekleri?'+ Sertifika Ekle':null), "openSertForm(null, document.getElementById('sertUrunSec')?document.getElementById('sertUrunSec').value:'')"))
+      :emptyState('Henüz sertifika eklenmedi', 'Ürünleriniz için Helal, Organik, BRCGS gibi sertifikaları ekleyip takip edin.', (urunSecenekleri?'+ Sertifika Ekle':null), 'openSertFormYeni'))
     +'</div></div></div>';
 }
 var SERT_TURLERI = ['Helal','Organik','BRCGS','IFS','Kosher','ISO 22000','Diğer'];
@@ -1591,7 +1591,7 @@ function openSertForm(sertId, urunIdForNew){
   var urunId = s ? s.urun_id : urunIdForNew;
   var u = state.urunler.find(function(x){return x.id===urunId;});
   var turSecenekleri = SERT_TURLERI.map(function(t2){return '<option'+(s&&s.sertifika_turu===t2?' selected':'')+'>'+t2+'</option>';}).join('');
-  openModal('<div class="mh"><b>'+(s?'Sertifikayı Düzenle':'Sertifika Ekle')+' · '+esc(u?u.ad:'')+'</b><button class="x" onclick="closeModal()">&times;</button></div>'
+  openModal('<div class="mh"><b>'+(s?'Sertifikayı Düzenle':'Sertifika Ekle')+' · '+esc(u?u.ad:'')+'</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb">'
     +'<div class="grid2"><div><label>Sertifika Türü</label><select id="stTur">'+turSecenekleri+'</select></div>'
     +'<div><label>Sertifika No</label><input id="stNo" value="'+esc(s?s.sertifika_no:'')+'"></div></div>'
@@ -1601,7 +1601,7 @@ function openSertForm(sertId, urunIdForNew){
     +'<div><label>Belge Bağlantısı (opsiyonel)</label><input id="stDosya" value="'+esc(s?s.dosya_url:'')+'" placeholder="https://..."></div>'
     +'<div><label>Not</label><textarea id="stNot" rows="2">'+esc(s?s.notlar:'')+'</textarea></div>'
     +'<div class="login-err" id="stHata"></div>'
-    +'</div><div class="mf"><button class="btn btn-line" onclick="closeModal()">Vazgeç</button><button class="btn btn-leaf" onclick="sertKaydet(\''+(sertId||'')+'\',\''+(urunId||'')+'\')">Kaydet</button></div>');
+    +'</div><div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Vazgeç</button><button class="btn btn-leaf" data-urs-act="sertKaydet" data-id="'+(sertId||'')+'" data-urunid="'+(urunId||'')+'">Kaydet</button></div>');
 }
 async function sertKaydet(sertId, urunId){
   if(kilitliMi()) return;
@@ -1646,7 +1646,7 @@ function renderAyarlar(){
     +'<div class="note">Bu bilgiler spesifikasyon PDF çıktısının üst bilgisinde (letterhead) ve yıllık gözden geçirme bildiriminde kullanılır.</div>'
     +'<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">'
     +'<div>'+(fb.logo_url?'<img id="fbLogoPreview" style="width:120px;height:120px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff">':'<div class="muted" style="width:120px;height:120px;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center">Logo yok</div>')
-    +(ce?'<div style="margin-top:8px"><input type="file" id="fbLogoInput" accept="image/*" style="max-width:160px"><br><button type="button" class="btn btn-line btn-sm" style="margin-top:6px" onclick="firmaLogoYukle()">Logo Yükle</button><div id="fbLogoMsj" class="muted" style="font-size:11px"></div></div>':'')+'</div>'
+    +(ce?'<div style="margin-top:8px"><input type="file" id="fbLogoInput" accept="image/*" style="max-width:160px"><br><button type="button" class="btn btn-line btn-sm" style="margin-top:6px" data-urs-act="firmaLogoYukle">Logo Yükle</button><div id="fbLogoMsj" class="muted" style="font-size:11px"></div></div>':'')+'</div>'
     +'<div style="flex:1;min-width:260px;display:grid;gap:10px">'
     +'<div><label>Firma Adı</label><input id="fbAd" value="'+esc(fb.firma_adi||'')+'" '+(ce?'':'disabled')+'></div>'
     +'<div><label>Adres</label><textarea id="fbAdres" rows="2" '+(ce?'':'disabled')+'>'+esc(fb.adres||'')+'</textarea></div>'
@@ -1656,7 +1656,7 @@ function renderAyarlar(){
     +'<div class="grid2"><div><label>Üst Yönetici Adı</label><input id="fbUstAd" value="'+esc(fb.ust_yonetici_ad||'')+'" '+(ce?'':'disabled')+'></div>'
     +'<div><label>Üst Yönetici E-postası</label><input id="fbUstEposta" value="'+esc(fb.ust_yonetici_eposta||'')+'" placeholder="onaylar süresi geldiğinde bilgilendirilir" '+(ce?'':'disabled')+'></div></div>'
     +'<div class="login-err" id="fbHata"></div>'
-    +(ce?'<button class="btn btn-leaf" style="justify-self:start" onclick="firmaKaydet()">Kaydet</button>':'')
+    +(ce?'<button class="btn btn-leaf" style="justify-self:start" data-urs-act="firmaKaydet">Kaydet</button>':'')
     +'</div></div></div></div>';
 }
 var FIRMA_LOGO_YOLU = null;
@@ -1780,6 +1780,56 @@ function startUrsTour(steps){
   window.addEventListener('keydown', onKey);
   show();
 }
+
+// 17.09.2026 CSP sıkılaştırması: tüm onclick="" attribute'ları kaldırıldı,
+// tek bir data-urs-act delegasyonuna taşındı (unsafe-inline script-src'den
+// kaldırılabilsin diye - bkz. _headers'taki not).
+var URS_ACTIONS = {
+  doLogin: function(){ doLogin(); },
+  toggleLang: function(){ toggleLang(); },
+  toggleTheme: function(){ toggleTheme(); },
+  startUrsTour: function(){ startUrsTour(); },
+  doLogout: function(){ doLogout(); },
+  sorunBildirAc: function(){ sorunBildirAc(); },
+  sorunBildirGonder: function(){ sorunBildirGonder(); },
+  closeModal: function(){ closeModal(); },
+  showView: function(el){ showView(el.dataset.view); },
+  openUrunForm: function(){ openUrunForm(); },
+  urunKaydet: function(el){ urunKaydet(el.dataset.id||''); },
+  openReceteKalemForm: function(el){ openReceteKalemForm(el.dataset.urunid, el.dataset.id); },
+  receteKalemSil: function(el){ receteKalemSil(el.dataset.id, el.dataset.urunid); },
+  receteKalemKaydet: function(el){ receteKalemKaydet(el.dataset.urunid, el.dataset.id||''); },
+  openSpecDetayVeKapat: function(el){ closeModal(); if(el.dataset.id) openSpecDetay(el.dataset.id); else openSpecDetay(null, el.dataset.urunid); },
+  removeRow: function(el){ el.closest('.'+el.dataset.rowClass).remove(); },
+  gorselSil: function(el){ gorselSil(el); },
+  musteriSpecSil: function(el){ musteriSpecSil(el); },
+  alerjenBeyaniDoldur: function(el){ alerjenBeyaniDoldur(el.dataset.urunid); },
+  gramajEkle: function(){ gramajEkle(); },
+  ambalajEkle: function(){ ambalajEkle(); },
+  aiBesinDegeriUret: function(el){ aiBesinDegeriUret(el.dataset.urunid); },
+  parametreEkle: function(el){ parametreEkle(el.dataset.a, el.dataset.b); },
+  duyusalEkle: function(){ duyusalEkle(); },
+  yasalEkle: function(el){ yasalEkle(el.dataset.value||''); },
+  gorselYukle: function(el){ gorselYukle(el.dataset.urunid); },
+  musteriSpecYukle: function(el){ musteriSpecYukle(el.dataset.urunid); },
+  ozelAlanEkle: function(){ ozelAlanEkle(); },
+  specYazdir: function(el){ specYazdir(el.dataset.id); },
+  etiketMetniGoster: function(el){ etiketMetniGoster(el.dataset.id); },
+  specKaydet: function(el){ specKaydet(el.dataset.id||'', el.dataset.urunid, el.dataset.durum); },
+  specOnayEmailGonder: function(el){ specOnayEmailGonder(el.dataset.id); },
+  printPage: function(){ window.print(); },
+  etiketMetniKopyala: function(){ etiketMetniKopyala(); },
+  openSertFormYeni: function(){ var sel=document.getElementById('sertUrunSec'); openSertForm(null, sel?sel.value:''); },
+  sertKaydet: function(el){ sertKaydet(el.dataset.id||'', el.dataset.urunid||''); },
+  firmaLogoYukle: function(){ firmaLogoYukle(); },
+  firmaKaydet: function(){ firmaKaydet(); }
+};
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-urs-act]');
+  if(!el) return;
+  var act = URS_ACTIONS[el.getAttribute('data-urs-act')];
+  if(act) act(el);
+});
 </script>
 </body>
 </html>

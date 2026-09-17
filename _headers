@@ -1,13 +1,14 @@
-# 17.09.2026 pentest turu: CSP Report-Only -> enforce (kurallar aynı, sadece fiilen uygulanıyor).
-# 17.09.2026 pentest turu bulgusu: bu modülde CSP/HSTS/X-Frame-Options tamamen eksikti
-# (diğer modüllerde en azından Report-Only CSP vardı). Cloudflare Pages bu dosyayı
-# otomatik okur (build adımı gerektirmez). CSP şimdilik Report-Only — tek-dosya
-# uygulamada yoğun inline script kullanımı var, doğrudan enforce etmek siteyi kırar.
-# Önce ihlalleri gözlemleyip kademeli sıkılaştırma (diğer modüllerle tutarlı desen).
+# 17.09.2026 (Faz 2): script-src'den unsafe-inline kaldırıldı. Tüm onclick=""
+# attribute'ları tek bir data-urs-act delegasyonuna taşındı (bkz. dosyanın
+# sonundaki URS_ACTIONS haritası). Kalan tek inline <script> bloğunun
+# SHA-256 hash'i aşağıda. Hash'i ASLA yerel çalışma kopyasından hesaplama
+# (Windows autocrlf CRLF üretir, git deposu/canlı LF - yanlış hash olur).
+# Doğru hesaplama: git show HEAD:URS.html > /tmp/x.html && node /tmp/csp-hash.js /tmp/x.html
+# style-src'de unsafe-inline hâlâ var (ayrı directive, bağımsız değerlendirilir).
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.qdataline.com; frame-ancestors 'none'; base-uri 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-Jz8n8KV5lmH7WoCQMVWCRRhXV+M7DXjUhPedS3feCNM=' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.qdataline.com; frame-ancestors 'none'; base-uri 'self'
