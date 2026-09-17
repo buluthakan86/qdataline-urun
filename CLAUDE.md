@@ -581,3 +581,33 @@ ctaOnclick)` yardımcı fonksiyonu eklendi (ikon + başlık + açıklama + CTA
 butonu, `.empty-state` CSS sınıfı). Uygulanan 4 ekran: Ürünler (`+ Yeni
 Ürün`), Reçeteler (Ürünler'e Git), Spesifikasyonlar (Ürünler'e Git),
 Sertifikalar (`+ Sertifika Ekle`). Sürüm damgası 2026.09.16-8.
+
+## 17.09.2026 — Bağımsız denetim: P1 onay unvanı DB kısıtı + hata mesajı
+
+Platformdaki 6 modül için paralel ajanla yaptırılan bağımsız güvenlik/kalite
+denetiminde URS'de P0 bulunmadı (RLS tüm `urun_*` tablolarında sağlam,
+storage bucket tenant-kilitli, e-posta onay akışı atomik). 2 P1 bulundu,
+ikisi de düzeltildi:
+
+**P1-1 — DÜZELTİLDİ:** "Onaylayan Unvanı" zorunluluğu yalnız istemci
+tarafında kontrol ediliyordu (`URS.html:1399-1400`); doğrudan bir REST/
+PostgREST çağrısı unvan boşken spesifikasyonu "Onaylı" yapabilirdi.
+`urun_spec_kaydet_trg()`'e, `durum='Onaylı'` geçişinde `onaylayan_rol`
+boşsa `URS_ONAYLAYAN_UNVAN_GEREKLI` reddi eklendi
+(`sql/urs_onay_unvani_zorunlu.sql`). Canlı Supabase'e uygulandı,
+rollback'li bir test işlemiyle (2/2 PASS, kalıntı 0) doğrulandı.
+
+**P1-2 — DÜZELTİLDİ:** `gorselYukle()`, `musteriSpecYukle()`,
+`aiBesinDegeriUret()`, `firmaLogoYukle()` fonksiyonlarında ham `e.message`
+doğrudan ekrana yazılıyordu (Storage/Edge Function hatalarının iç detayı
+sızabilir). Dördü de mevcut `ursHata()` çevirmenine yönlendirildi.
+
+Commit `be18eb5`, `git push` sonrası Cloudflare Pages otomatik deploy'u
+ile canlıya yansıdı (`urun.qdataline.com`), curl ile teyit edildi.
+
+**Önemli hatırlatma:** Google Drive'daki `Reçete ve Spesifikasyon
+Yönetimi\` klasörü ESKİ/senkronize olmayan bir kopya — bu depo
+(`C:\temp\qdataline-urun`) GERÇEK çalışma kopyasıdır. Bkz.
+`_OKU-BURASI-GIT-DEPOSU-DEGIL.md`.
+
+Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
