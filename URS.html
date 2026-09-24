@@ -223,6 +223,10 @@ tr:hover td{background:var(--mint-2)}
 .login-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:32px; width:100%; max-width:380px; box-shadow:var(--shadow)}
 .login-card .logo-row{justify-content:center; margin-bottom:18px}
 .login-err{color:var(--crit); font-size:12.5px; min-height:16px}
+/* 24.09.2026: yönetici olmayanlara silme/ayar/geçersiz kılma gösterilmez */
+body.qdl-editor [data-urunsil],
+body.qdl-editor [data-sertsil],
+body.qdl-editor .nav-item[data-v="ayarlar"]{display:none !important}
 </style>
 <script src="/qdl-hata.js"></script>
 </head>
@@ -458,6 +462,7 @@ function ursHata(err){
   try{ console.error('[qdl/urs]', err); }catch(e){}
   var msj = String((err && err.message) || '');
   var kod = err && err.code;
+  if(/QDL_YALNIZ_ADMIN/.test(msj)) return 'Bu işlem yalnız yönetici tarafından yapılabilir.';
   if(kod === '23505' || /duplicate key/i.test(msj)) return 'Bu kayıt zaten var.';
   if(kod === '23503') return 'İlişkili bir kayıt bulunamadı.';
   if(kod === '23502') return 'Zorunlu bir alan boş bırakıldı.';
@@ -635,6 +640,8 @@ async function afterLogin(user){
   if(pErr || !prof){ document.getElementById('loErr').textContent = 'Profil bulunamadı — yetkiniz yok.'; return; }
   cloudTenantId = prof.tenant_id;
   cloudUserRole = prof.role || '';
+  /* 24.09.2026: EDITOR kısıtı (kullanıcı kararı) — silme, ayarlar, geçersiz kılma yalnız yönetici; kural DB'de de var */
+  try{ document.body.classList.toggle('qdl-editor', String(cloudUserRole||'').toUpperCase() !== 'ADMIN'); }catch(_){ }
   var { data: yetki } = await sb.rpc('has_modul', { p_modul: MODUL_KODU });
   if(!yetki){ document.getElementById('loErr').textContent = 'Bu modüle (Reçete ve Spesifikasyon Yönetimi) erişim yetkiniz yok.'; return; }
   document.getElementById('cloudUserLbl').textContent = prof.full_name || user.email;
