@@ -611,3 +611,7 @@ Yönetimi\` klasörü ESKİ/senkronize olmayan bir kopya — bu depo
 `_OKU-BURASI-GIT-DEPOSU-DEGIL.md`.
 
 Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
+
+
+## EK (24.09.2026) — E2E test turu düzeltmeleri
+- EDITOR kısıtı: ürün/sertifika/spesifikasyon silme ve firma ayarları (urun_firma_bilgileri) yalnız ADMIN (DB: _platform-ortak/sql/25_editor_kisitlari.sql); urun_receteler = reçete KALEMİ, kapsam dışı (düzenleyici kalem silebilir). Arayüzde [data-urunsil]/[data-sertsil]/Ayarlar menüsü editöre gizli.
