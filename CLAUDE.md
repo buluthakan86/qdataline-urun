@@ -615,3 +615,15 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 
 ## EK (24.09.2026) — E2E test turu düzeltmeleri
 - EDITOR kısıtı: ürün/sertifika/spesifikasyon silme ve firma ayarları (urun_firma_bilgileri) yalnız ADMIN (DB: _platform-ortak/sql/25_editor_kisitlari.sql); urun_receteler = reçete KALEMİ, kapsam dışı (düzenleyici kalem silebilir). Arayüzde [data-urunsil]/[data-sertsil]/Ayarlar menüsü editöre gizli.
+
+
+## EK (25.09.2026) — Platform geneli turu (takvim, uyarı, KPI, İngilizce, E2E P2, demo veri)
+- **Ortak istemci dosyaları** (kaynak: `_platform-ortak/istemci/`, modül kökünde birebir kopya, qdl-hata.js ile aynı yöntem):
+  - `qdl-takvim.js` — tüm `input[type=date|datetime-local]` için modül renginde (CSS `--leaf`) takvim, Pazartesi başlangıç. Alan türüne/değerine dokunmaz. Hariç: `data-qdl-takvim="yok"`.
+  - `qdl-dialog.js` — `qdlDialog()`, `qdlKirliMi(kok)`, `qdlKapatSor(kok)`: form dışına tıklama / Vazgeç / ✕ → YALNIZ gerçek değişiklik varsa modül renkli "Kaydedilmemiş değişiklikler" penceresi.
+  - `qdl-ceviri.js` + modüle özel `qdl-en.js` — `<html lang="en">` iken ekrandaki Türkçe arayüz metinlerini (ve placeholder/title) sözlükten çevirir; TR'ye dönünce geri yazar. Dil değişiminde `document.documentElement.lang` güncellenmeli. Yeni arayüz metni eklenince `qdl-en.js`'e de eklenmeli (tarama aracı: `C:/temp/pw/entara2.js`).
+- **Tıklanabilir KPI**: ana sayfa kartları ilgili listeyi (gerekirse süzülmüş, üstte "Filtre: … ✕ Filtreyi kaldır" şeridi) açar; menüden geçişte filtre sıfırlanır.
+- **Sayı alanları** yeni kayıtta 0 yerine boş başlar (kayıtta boş = 0/varsayılan).
+- **Test araçları**: `C:/temp/pw/kpitest.js`, `entara2.js`, `final.js` (puppeteer-core + Edge; service_role ile demo.yonetici magic link → SSO; yerel HTML canlı adrese enjekte edilerek yayından önce test). CSP: `cspsync.js` (HEAD~1→HEAD), `cspadd.js` (eksik hash ekle), `cspcheck.js`.
+- URS: KPI → ürünler (aktif/reçeteli/alerjenli), spesifikasyonlar (Onaylı/Taslak), sertifikalar (uyarı). Menü sayaçları buildNav sonrası 0'a düşmüyor (B-25). Vazgeç/✕ qdlKapatSor, boş ürün adında vurgu, html lang. urun-onay.html hash eksikti → eklendi. E2E ürün+spec silindi.
+- SIRADA (kullanıcı notları 25.09): ürün satırı tıklanabilir detay, yazdırmada arka plan, spec alanları büyük, işletme kayıt/onay no, birim listesi+ayarlar, çoklu net miktar/palet/ambalaj (+dökme), raf ömrü birimi, ürün ölçüsü, bileşik hammadde, reçeteden yalnız ad (azalan), EN/tema/tur standardı, Ar-Ge deneme modülü.
