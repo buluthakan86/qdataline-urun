@@ -234,6 +234,8 @@ body.qdl-editor .nav-item[data-v="ayarlar"]{display:none !important}
 <script src="/qdl-hata.js"></script>
 <script src="/qdl-takvim.js"></script>
 <script src="/qdl-dialog.js"></script>
+<script src="/qdl-ceviri.js"></script>
+<script src="/qdl-en.js"></script>
 </head>
 <body>
 
@@ -424,10 +426,12 @@ function toggleTheme(){
 // ASLA çevrilmez.
 // ---------------------------------------------------------------------------
 var LANG = (function(){ try{ return localStorage.getItem('urs_lang')==='en'?'en':'tr'; }catch(e){ return 'tr'; } })();
+try{ document.documentElement.lang = LANG; }catch(e){}
 function t(s){ if(LANG!=='en') return s; var v=I18N[s]; return v!==undefined?v:s; }
 function toggleLang(){
   LANG = LANG==='en' ? 'tr' : 'en';
   try{ localStorage.setItem('urs_lang', LANG); }catch(e){}
+  try{ document.documentElement.lang = LANG; }catch(e){}
   applyLangStatic();
   buildNav();
   if(document.getElementById('appRoot') && !document.getElementById('appRoot').classList.contains('hidden')){
