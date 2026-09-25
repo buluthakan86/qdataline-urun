@@ -108,6 +108,9 @@ aside.side{width:248px; flex-shrink:0; background:var(--card); color:var(--ink);
 .panel .ph{padding:14px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
 .panel .pb{padding:16px 18px}
 .kpi-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:20px}
+.kpi-link{cursor:pointer; transition:border-color .15s, transform .15s}
+.kpi-link:hover,.kpi-link:focus-visible{border-color:var(--leaf); transform:translateY(-1px); outline:none}
+.kpi-filtre{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; padding:8px 12px; border:1px solid var(--leaf); border-radius:10px; font-size:13px}
 .kpi{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:15px 16px; box-shadow:var(--shadow); position:relative; overflow:hidden}
 .kpi::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--leaf)}
 .kpi .val{font-size:26px; font-weight:800; letter-spacing:-.5px}
@@ -446,6 +449,7 @@ function applyLangStatic(){
   }
 }
 var I18N = {
+  'Filtre':'Filter','Filtreyi kaldır':'Clear filter',
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış Yap':'Log Out',
   'Reçete ve Spesifikasyon Yönetimi':'Recipe & Specification Management',
   'Anasayfa':'Overview','Ürünler':'Products','Reçeteler':'Recipes','Spesifikasyonlar':'Specifications',
@@ -742,6 +746,7 @@ document.getElementById('snav').addEventListener('click', function(e){
 });
 
 function showView(v){
+  if(!window.__kpiGo) uKpi = null;
   curView = v;
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.toggle('on', el.dataset.v===v); });
   document.getElementById('pageTitle').textContent = t(PAGE_TITLES[v] || '');
@@ -759,6 +764,7 @@ function render(){
   else if(curView === 'alerjen') c.innerHTML = renderAlerjenMatrisi();
   else if(curView === 'sertifikalar') c.innerHTML = renderSertifikalar();
   else if(curView === 'ayarlar') c.innerHTML = renderAyarlar();
+  var _us = uKpiSerit(curView); if(_us) c.insertAdjacentHTML('afterbegin', _us);
   wireView();
 }
 function wireView(){
@@ -804,12 +810,12 @@ function renderAnasayfa(){
   }).join('');
 
   return '<div class="kpi-row">'
-    +'<div class="kpi"><div class="val">'+aktifUrun+'</div><div class="lbl">Aktif Ürün</div></div>'
-    +'<div class="kpi"><div class="val">'+receteSayisi+'</div><div class="lbl">Reçetesi Olan Ürün</div></div>'
-    +'<div class="kpi"><div class="val" style="color:var(--ok)">'+onayliSpec+'</div><div class="lbl">Onaylı Spesifikasyon</div></div>'
-    +'<div class="kpi"><div class="val" style="'+(taslakSpec?'color:var(--warn)':'')+'">'+taslakSpec+'</div><div class="lbl">Taslak Spesifikasyon</div></div>'
-    +'<div class="kpi"><div class="val" style="'+(alerjenliUrunSayisi?'color:var(--crit)':'')+'">'+alerjenliUrunSayisi+'</div><div class="lbl">Alerjen İçeren Ürün</div></div>'
-    +'<div class="kpi"><div class="val" style="'+(sertUyariSayisi?'color:var(--crit)':'')+'">'+sertUyariSayisi+'</div><div class="lbl">Sertifika Uyarısı</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="aktif" data-ukpi-l="Aktif ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val">'+aktifUrun+'</div><div class="lbl">Aktif Ürün</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="receteli" data-ukpi-l="Reçetesi olan ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val">'+receteSayisi+'</div><div class="lbl">Reçetesi Olan Ürün</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="spesifikasyonlar" data-ukpi-f="Onaylı" data-ukpi-l="Onaylı spesifikasyonlar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="color:var(--ok)">'+onayliSpec+'</div><div class="lbl">Onaylı Spesifikasyon</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="spesifikasyonlar" data-ukpi-f="Taslak" data-ukpi-l="Taslak spesifikasyonlar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(taslakSpec?'color:var(--warn)':'')+'">'+taslakSpec+'</div><div class="lbl">Taslak Spesifikasyon</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="alerjenli" data-ukpi-l="Alerjen içeren ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(alerjenliUrunSayisi?'color:var(--crit)':'')+'">'+alerjenliUrunSayisi+'</div><div class="lbl">Alerjen İçeren Ürün</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="sertifikalar" data-ukpi-f="uyari" data-ukpi-l="Geçerli olmayan / süresi yaklaşan sertifikalar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(sertUyariSayisi?'color:var(--crit)':'')+'">'+sertUyariSayisi+'</div><div class="lbl">Sertifika Uyarısı</div></div>'
     +'</div>'
     +(sertUyariSatirlar.length?('<div class="panel"><div class="ph"><h2>⚠ Dikkat Gerektiren Sertifikalar</h2><span class="sp" style="flex:1"></span>'
       +(canEdit()?'<button class="btn btn-line btn-sm" data-urs-act="showView" data-view="sertifikalar">Tüm Sertifikalar →</button>':'')+'</div>'
@@ -832,8 +838,29 @@ function renderAnasayfa(){
 // ---------------------------------------------------------------------------
 // ÜRÜNLER
 // ---------------------------------------------------------------------------
+// 25.09.2026: Özet KPI kartları → ilgili liste süzülmüş açılır
+var uKpi = null;
+function uKpiF(v){ return uKpi && uKpi.v===v ? uKpi.f : ''; }
+function uKpiSerit(v){ return uKpiF(v) ? '<div class="kpi-filtre"><b>'+t('Filtre')+':</b> '+esc(uKpi.l)+' <button class="btn btn-line btn-sm" id="uKpiTemizle">✕ '+t('Filtreyi kaldır')+'</button></div>' : ''; }
+document.addEventListener('click', function(e){
+  if(e.target && e.target.id==='uKpiTemizle'){ uKpi=null; render(); return; }
+  var k = e.target.closest && e.target.closest('[data-ukpi-v]'); if(!k) return;
+  uKpi = { v:k.dataset.ukpiV, f:k.dataset.ukpiF, l:k.dataset.ukpiL };
+  window.__kpiGo=true; try{ showView(uKpi.v); } finally { window.__kpiGo=false; }
+});
+document.addEventListener('keydown', function(e){
+  if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('kpi-link')){ e.preventDefault(); e.target.click(); }
+});
 function renderUrunler(){
-  var rows = state.urunler.map(function(u){
+  var uf = uKpiF('urunler');
+  var receteliSet = {}; if(uf==='receteli') state.receteler.forEach(function(r){ receteliSet[r.urun_id]=true; });
+  var urunListe = state.urunler.filter(function(u){
+    if(uf==='aktif') return u.durum==='Aktif';
+    if(uf==='receteli') return !!receteliSet[u.id];
+    if(uf==='alerjenli') return urunAlerjenleri(u.id).length>0;
+    return true;
+  });
+  var rows = urunListe.map(function(u){
     var spec = specOf(u.id);
     var recSayisi = receteOf(u.id).length;
     return '<tr>'
@@ -977,7 +1004,8 @@ async function receteKalemSil(kalemId, urunId){
 // SPESİFİKASYONLAR
 // ---------------------------------------------------------------------------
 function renderSpesifikasyonlar(){
-  var rows = state.specler.map(function(s){
+  var sf = uKpiF('spesifikasyonlar');
+  var rows = state.specler.filter(function(s){ return !sf || s.durum===sf; }).map(function(s){
     return '<tr class="clk" data-specgoster="'+s.id+'" style="cursor:pointer">'
       +'<td><span class="pill blue">'+esc(s.spec_kodu||'—')+'</span></td>'
       +'<td><b>'+esc(urunAdi(s.urun_id))+'</b></td>'
@@ -1572,7 +1600,7 @@ function renderAlerjenMatrisi(){
 // SERTİFİKALAR — ürün bazında Helal/Organik/BRCGS/IFS/Kosher geçerlilik takibi
 // ---------------------------------------------------------------------------
 function renderSertifikalar(){
-  var rows = state.sertifikalar.map(function(s){
+  var rows = state.sertifikalar.filter(function(s){ return uKpiF('sertifikalar')!=='uyari' || sertDurum(s)!=='Geçerli'; }).map(function(s){
     var durum = sertDurum(s);
     var pillCls = durum==='Geçerli'?'ok':(durum==='Süresi Yaklaşıyor'?'warn':'crit');
     return '<tr>'
