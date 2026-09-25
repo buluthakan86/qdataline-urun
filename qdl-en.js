@@ -1,6 +1,9 @@
 /* qdl-en.js — Reçete ve Spesifikasyon (URS): EN modunda Türkçe kalan arayüz metinleri (qdl-ceviri.js). 25.09.2026 */
 window.QDL_EN = {
   /* 25.09.2026 Ar-Ge projeleri */
+  "+ Test / Not Ekle": "+ Add Test / Note",
+  "+ Yeni Deneme": "+ New Trial",
+  "+ Hammadde Ekle": "+ Add Ingredient",
   "Ar-Ge Projeleri": "R&D Projects",
   "+ Yeni Ar-Ge Projesi": "+ New R&D Project",
   "Yeni Ar-Ge Projesi": "New R&D Project",
@@ -258,6 +261,7 @@ window.QDL_EN = {
   'İşletme Kayıt No': 'Business Registration No', 'İşletme Onay No': 'Business Approval No', 'İşletme Kayıt / Onay No': 'Business Registration / Approval No', 'Önceki toplantıdan otomatik önerildi, değiştirebilirsiniz.': 'Suggested from the previous meeting; you can change it.'
 };
 window.QDL_EN_RE = [
+  [/^Sorumlu: (.+)$/, 'Owner: $1'],
   [/^Denemeler \((\d+)\)$/, 'Trials ($1)'],
   [/^Deneme #(\d+)$/, 'Trial #$1'],
   [/^(\d+) hammadde$/, '$1 ingredients'],
