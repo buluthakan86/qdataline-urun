@@ -450,6 +450,7 @@ function applyLangStatic(){
 }
 var I18N = {
   'Filtre':'Filter','Filtreyi kaldır':'Clear filter',
+  'Aktif Ürün':'Active Products','Reçetesi Olan Ürün':'Products with Recipe','Onaylı Spesifikasyon':'Approved Specifications','Taslak Spesifikasyon':'Draft Specifications','Alerjen İçeren Ürün':'Products with Allergens','Sertifika Uyarısı':'Certificate Alerts',
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış Yap':'Log Out',
   'Reçete ve Spesifikasyon Yönetimi':'Recipe & Specification Management',
   'Anasayfa':'Overview','Ürünler':'Products','Reçeteler':'Recipes','Spesifikasyonlar':'Specifications',
@@ -550,6 +551,7 @@ function buildNav(){
   }).join('');
   document.getElementById('snav').innerHTML = html;
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.toggle('on', el.dataset.v===curView); });
+  if(typeof navSayaclari==='function' && state && state.urunler) navSayaclari();
 }
 
 // ---------------------------------------------------------------------------
@@ -688,9 +690,14 @@ async function loadAll(){
   ]);
   state.urunler = ur; state.receteler = rc; state.specler = sp; state.versiyonlar = vr; state.sertifikalar = st;
   state.firmaBilgisi = fb.data || null;
-  document.getElementById('cntUrun').textContent = ur.filter(function(u){return u.durum==='Aktif';}).length;
-  document.getElementById('cntSpecTaslak').textContent = sp.filter(function(s){return s.durum==='Taslak';}).length;
-  document.getElementById('cntSertBitiyor').textContent = st.filter(function(s){return sertDurum(s)!=='Geçerli';}).length;
+  navSayaclari();
+}
+// 25.09.2026 (E2E B-25): menü yeniden çizilince (buildNav) sayaçlar 0'a düşüyordu — sayaçlar state'ten yeniden yazılır
+function navSayaclari(){
+  var set=function(id,n){ var el=document.getElementById(id); if(el) el.textContent=n; };
+  set('cntUrun', (state.urunler||[]).filter(function(u){return u.durum==='Aktif';}).length);
+  set('cntSpecTaslak', (state.specler||[]).filter(function(s){return s.durum==='Taslak';}).length);
+  set('cntSertBitiyor', (state.sertifikalar||[]).filter(function(s){return sertDurum(s)!=='Geçerli';}).length);
 }
 function urunAdi(id){ var u=state.urunler.find(function(x){return x.id===id;}); return u?u.ad:'—'; }
 function receteOf(urunId){ return state.receteler.filter(function(r){return r.urun_id===urunId;}).sort(function(a,b){return a.sira_no-b.sira_no;}); }
@@ -810,12 +817,12 @@ function renderAnasayfa(){
   }).join('');
 
   return '<div class="kpi-row">'
-    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="aktif" data-ukpi-l="Aktif ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val">'+aktifUrun+'</div><div class="lbl">Aktif Ürün</div></div>'
-    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="receteli" data-ukpi-l="Reçetesi olan ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val">'+receteSayisi+'</div><div class="lbl">Reçetesi Olan Ürün</div></div>'
-    +'<div class="kpi kpi-link" data-ukpi-v="spesifikasyonlar" data-ukpi-f="Onaylı" data-ukpi-l="Onaylı spesifikasyonlar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="color:var(--ok)">'+onayliSpec+'</div><div class="lbl">Onaylı Spesifikasyon</div></div>'
-    +'<div class="kpi kpi-link" data-ukpi-v="spesifikasyonlar" data-ukpi-f="Taslak" data-ukpi-l="Taslak spesifikasyonlar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(taslakSpec?'color:var(--warn)':'')+'">'+taslakSpec+'</div><div class="lbl">Taslak Spesifikasyon</div></div>'
-    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="alerjenli" data-ukpi-l="Alerjen içeren ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(alerjenliUrunSayisi?'color:var(--crit)':'')+'">'+alerjenliUrunSayisi+'</div><div class="lbl">Alerjen İçeren Ürün</div></div>'
-    +'<div class="kpi kpi-link" data-ukpi-v="sertifikalar" data-ukpi-f="uyari" data-ukpi-l="Geçerli olmayan / süresi yaklaşan sertifikalar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(sertUyariSayisi?'color:var(--crit)':'')+'">'+sertUyariSayisi+'</div><div class="lbl">Sertifika Uyarısı</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="aktif" data-ukpi-l="Aktif ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val">'+aktifUrun+'</div><div class="lbl">'+t('Aktif Ürün')+'</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="receteli" data-ukpi-l="Reçetesi olan ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val">'+receteSayisi+'</div><div class="lbl">'+t('Reçetesi Olan Ürün')+'</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="spesifikasyonlar" data-ukpi-f="Onaylı" data-ukpi-l="Onaylı spesifikasyonlar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="color:var(--ok)">'+onayliSpec+'</div><div class="lbl">'+t('Onaylı Spesifikasyon')+'</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="spesifikasyonlar" data-ukpi-f="Taslak" data-ukpi-l="Taslak spesifikasyonlar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(taslakSpec?'color:var(--warn)':'')+'">'+taslakSpec+'</div><div class="lbl">'+t('Taslak Spesifikasyon')+'</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="urunler" data-ukpi-f="alerjenli" data-ukpi-l="Alerjen içeren ürünler" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(alerjenliUrunSayisi?'color:var(--crit)':'')+'">'+alerjenliUrunSayisi+'</div><div class="lbl">'+t('Alerjen İçeren Ürün')+'</div></div>'
+    +'<div class="kpi kpi-link" data-ukpi-v="sertifikalar" data-ukpi-f="uyari" data-ukpi-l="Geçerli olmayan / süresi yaklaşan sertifikalar" role="button" tabindex="0" title="Listeyi aç"><div class="val" style="'+(sertUyariSayisi?'color:var(--crit)':'')+'">'+sertUyariSayisi+'</div><div class="lbl">'+t('Sertifika Uyarısı')+'</div></div>'
     +'</div>'
     +(sertUyariSatirlar.length?('<div class="panel"><div class="ph"><h2>⚠ Dikkat Gerektiren Sertifikalar</h2><span class="sp" style="flex:1"></span>'
       +(canEdit()?'<button class="btn btn-line btn-sm" data-urs-act="showView" data-view="sertifikalar">Tüm Sertifikalar →</button>':'')+'</div>'
@@ -891,7 +898,7 @@ function openUrunForm(id){
 async function urunKaydet(id){
   if(kilitliMi()) return;
   var ad=val('urAd').trim(), e=document.getElementById('urHata');
-  if(!ad){ e.textContent='Ürün adı zorunludur.'; kilitAc(); return; }
+  if(!ad){ e.textContent='Ürün adı zorunludur.'; var _a=document.getElementById('urAd'); if(_a){ _a.style.borderColor='var(--crit)'; _a.focus(); } kilitAc(); return; }
   var rec = { ad:ad, kategori:val('urKat').trim(), durum:val('urDurum'), aciklama:val('urAciklama').trim() };
   try{
     var r = id ? await sb.from('urun_urunler').update(rec).eq('id',id)
@@ -1831,7 +1838,7 @@ var URS_ACTIONS = {
   doLogout: function(){ doLogout(); },
   sorunBildirAc: function(){ sorunBildirAc(); },
   sorunBildirGonder: function(){ sorunBildirGonder(); },
-  closeModal: function(){ closeModal(); },
+  closeModal: function(){ var mb=document.querySelector('#overlay .modal, #modal, #overlay'); if(window.qdlKapatSor && mb){ qdlKapatSor(mb).then(function(ok){ if(ok) closeModal(); }); } else closeModal(); },
   showView: function(el){ showView(el.dataset.view); },
   openUrunForm: function(){ openUrunForm(); },
   urunKaydet: function(el){ urunKaydet(el.dataset.id||''); },
