@@ -715,6 +715,50 @@ function navSayaclari(){
   set('cntSertBitiyor', (state.sertifikalar||[]).filter(function(s){return sertDurum(s)!=='Geçerli';}).length);
 }
 function urunAdi(id){ var u=state.urunler.find(function(x){return x.id===id;}); return u?u.ad:'—'; }
+/* 25.09.2026 (kullanıcı notları): firma bazlı listeler — Ayarlar'dan eklenir (urun_firma_bilgileri.listeler) */
+var URS_LISTE_VARSAYILAN = {
+  birimler: ['%','g','mg','µg','kg','g/100g','mg/kg','µg/kg','ppm','ppb','kob/g','kob/ml','kob/25g','EMS/g','°Bx','pH','aw','mS/cm','°C','mm','adet'],
+  ambalaj_tipleri: ['Kraft kağıt torba','PE torba','PP dokuma çuval','OPP/CPP','Metalize film','Karton kutu','Oluklu koli','Cam kavanoz','PET şişe','Teneke kutu','Big bag','Vakum ambalaj'],
+  paket_olculeri: ['250 g','500 g','1 kg','2 kg','5 kg','10 kg','25 kg'],
+  palet_olculeri: ['80×120 cm (Euro)','100×120 cm','100×100 cm','Dökme (paletsiz)']
+};
+var URS_LISTE_ADLARI = { birimler:'Birimler', ambalaj_tipleri:'Ambalaj Tipleri', paket_olculeri:'Paket Ölçüleri / Net Miktarlar', palet_olculeri:'Palet Ölçüleri / Gönderim Şekli' };
+function ursListe(ad){ var l = ((state.firmaBilgisi||{}).listeler||{})[ad]; return (l && l.length) ? l : URS_LISTE_VARSAYILAN[ad]; }
+function ursSecenek(ad, secili, bosEtiket){
+  var l = ursListe(ad).slice(); if(secili && l.indexOf(secili)<0) l.push(secili);
+  return '<option value="">'+esc(bosEtiket||'— seçin —')+'</option>'+l.map(function(x){ return '<option'+(x===secili?' selected':'')+'>'+esc(x)+'</option>'; }).join('');
+}
+async function ursListeKaydet(ad, yeni){
+  var fb = state.firmaBilgisi || {}; var ls = Object.assign({}, fb.listeler||{}); ls[ad] = yeni;
+  var r = await sb.from('urun_firma_bilgileri').upsert({ tenant_id: cloudTenantId, listeler: ls }, { onConflict: 'tenant_id' });
+  if(r.error) throw r.error;
+  state.firmaBilgisi = Object.assign({}, fb, { listeler: ls });
+}
+function ursListeEkle(ad){
+  var inp = document.getElementById('lsYeni_'+ad); if(!inp) return; var v = inp.value.trim(); if(!v) return;
+  var l = ursListe(ad).slice(); if(l.indexOf(v)<0) l.push(v);
+  ursListeKaydet(ad, l).then(function(){ render(); }).catch(function(e){ alert(ursHata(e)); });
+}
+function ursListeSil(ad, deger){
+  var l = ursListe(ad).filter(function(x){ return x!==deger; });
+  ursListeKaydet(ad, l).then(function(){ render(); }).catch(function(e){ alert(ursHata(e)); });
+}
+function ursListelerHtml(ce){
+  return Object.keys(URS_LISTE_ADLARI).map(function(ad){
+    return '<div style="margin-bottom:14px"><label>'+esc(URS_LISTE_ADLARI[ad])+'</label><div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">'
+      + ursListe(ad).map(function(x){ return '<span class="pill blue" style="display:inline-flex;align-items:center;gap:6px">'+esc(x)+(ce?'<button type="button" class="x" style="font-size:13px;line-height:1" data-urs-act="ursListeSil" data-ad="'+ad+'" data-deger="'+esc(x)+'" title="Kaldır">&times;</button>':'')+'</span>'; }).join('')
+      + '</div>'+(ce?'<div style="display:flex;gap:6px;max-width:420px"><input id="lsYeni_'+ad+'" placeholder="Yeni ekle…"><button type="button" class="btn btn-line btn-sm" data-urs-act="ursListeEkle" data-ad="'+ad+'">+ Ekle</button></div>':'')+'</div>';
+  }).join('');
+}
+/* 25.09.2026: spesifikasyon/etiket için içindekiler — reçeteden YALNIZ adlar, oranı büyükten küçüğe;
+   bileşik hammadde "Ad (alt1, alt2…)" biçiminde (alt bileşenler de kendi oranına göre sıralı); alerjenli hammadde KALIN+BÜYÜK. */
+function icindekilerMetni(urunId){
+  return receteOf(urunId).slice().sort(function(a,b){ return (Number(b.oran_yuzde)||0)-(Number(a.oran_yuzde)||0); }).map(function(r){
+    var ad = (r.alerjenler||[]).length ? ('<b>'+esc(String(r.hammadde_adi).toLocaleUpperCase('tr-TR'))+'</b>') : esc(r.hammadde_adi);
+    var alt = (r.alt_bilesenler||[]).filter(function(x){return x&&x.ad;}).slice().sort(function(a,b){ return (Number(b.oran)||0)-(Number(a.oran)||0); }).map(function(x){ return esc(x.ad); });
+    return alt.length ? (ad+' ('+alt.join(', ')+')') : ad;
+  }).join(', ');
+}
 function receteOf(urunId){ return state.receteler.filter(function(r){return r.urun_id===urunId;}).sort(function(a,b){return a.sira_no-b.sira_no;}); }
 function specOf(urunId){ return state.specler.find(function(s){return s.urun_id===urunId;}); }
 function urunAlerjenleri(urunId){
@@ -1002,6 +1046,8 @@ function openReceteDetay(urunId){
     +(specOf(urunId)?'<button class="btn btn-leaf" data-urs-act="openSpecDetayVeKapat" data-id="'+specOf(urunId).id+'">Spesifikasyonu Aç →</button>':'<button class="btn btn-leaf" data-urs-act="openSpecDetayVeKapat" data-urunid="'+urunId+'">+ Spesifikasyon Oluştur</button>')
     +'</div>');
 }
+function altBilesenSatiri(a){ a=a||{};
+  return '<div class="altBilesenRow" style="display:grid;grid-template-columns:1fr 130px auto;gap:6px;margin-bottom:4px"><input class="abAd" placeholder="Alt bileşen adı" value="'+esc(a.ad||'')+'"><input class="abOran" type="number" step="0.01" min="0" max="100" placeholder="% (hammadde içinde)" value="'+(a.oran!=null?a.oran:'')+'"><button type="button" class="x" data-urs-act="removeRow" data-row-class="altBilesenRow" title="Kaldır">&times;</button></div>'; }
 function openReceteKalemForm(urunId, kalemId){
   var k = kalemId ? state.receteler.find(function(x){return x.id===kalemId;}) : null;
   var alerjenChecks = TGK_ALERJENLER.map(function(a){
@@ -1012,6 +1058,9 @@ function openReceteKalemForm(urunId, kalemId){
     +'<div class="mb">'
     +'<div class="grid2"><div><label>Hammadde Adı *</label><input id="rkAd" value="'+esc(k?k.hammadde_adi:'')+'"></div>'
     +'<div><label>Oran (%)</label><input id="rkOran" type="number" step="0.01" min="0" max="100" value="'+(k&&k.oran_yuzde!=null?k.oran_yuzde:'')+'"></div></div>'
+    +'<div><label>Alt Bileşenler <span class="muted">(bileşik hammadde ise — ör. Çikolata: şeker, kakao kitlesi, kakao yağı… ve hammadde içindeki oranları)</span></label>'
+    +'<div id="altBilesenWrap">'+((k&&k.alt_bilesenler)||[]).map(altBilesenSatiri).join('')+'</div>'
+    +'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="altBilesenEkle">+ Alt Bileşen Ekle</button></div>'
     +'<div><label>Tedarikçi (opsiyonel — bilgi amaçlı, portal/giriş yok)</label><input id="rkTedarikci" value="'+esc(k?k.tedarikci_adi:'')+'"></div>'
     +'<div><label>Proses Talimatı <span class="muted">(hangi aşamada, hangi koşullarda eklenir; sıvı/katı çözünme, karıştırma süresi vb.)</span></label><textarea id="rkProses" rows="3" placeholder="ör. Karıştırma tankına 40°C su ile birlikte eklenir, tozun tamamı çözününceye kadar 10 dk karıştırılır.">'+esc(k?k.proses_talimati:'')+'</textarea></div>'
     +'<div><label>Not (opsiyonel)</label><input id="rkNot" value="'+esc(k?k.notlar:'')+'"></div>'
@@ -1025,7 +1074,8 @@ async function receteKalemKaydet(urunId, kalemId){
   if(!ad){ e.textContent='Hammadde adı zorunludur.'; kilitAc(); return; }
   var alerjenler = Array.prototype.map.call(document.querySelectorAll('.recAlerjenChk:checked'), function(c){return c.value;});
   var mevcut = receteOf(urunId);
-  var rec = { urun_id:urunId, hammadde_adi:ad, oran_yuzde:numOrNull('rkOran'), tedarikci_adi:val('rkTedarikci').trim(), proses_talimati:val('rkProses').trim(), notlar:val('rkNot').trim(), alerjenler:alerjenler };
+  var rec = { urun_id:urunId, hammadde_adi:ad, oran_yuzde:numOrNull('rkOran'), tedarikci_adi:val('rkTedarikci').trim(), proses_talimati:val('rkProses').trim(), notlar:val('rkNot').trim(), alerjenler:alerjenler,
+    alt_bilesenler: Array.prototype.map.call(document.querySelectorAll('.altBilesenRow'), function(row){ var o=row.querySelector('.abOran').value.trim(); return { ad: row.querySelector('.abAd').value.trim(), oran: o?Number(o):null }; }).filter(function(x){return x.ad;}) };
   try{
     var r = kalemId ? await sb.from('urun_receteler').update(rec).eq('id',kalemId)
                     : await sb.from('urun_receteler').insert(Object.assign({kk:'REC-'+Date.now().toString(36), sira_no:mevcut.length}, rec));
@@ -1080,7 +1130,7 @@ function specFormAlanlari(s){
     enerji_kcal:s.enerji_kcal, yag_g:s.yag_g, doymus_yag_g:s.doymus_yag_g, karbonhidrat_g:s.karbonhidrat_g,
     seker_g:s.seker_g, protein_g:s.protein_g, tuz_g:s.tuz_g, trans_yag_g:s.trans_yag_g,
     fiziksel_kimyasal_limitler:s.fiziksel_kimyasal_limitler||'', mikrobiyolojik_limitler:s.mikrobiyolojik_limitler||'',
-    ambalaj_spesifikasyonu:s.ambalaj_spesifikasyonu||'', raf_omru_ay:s.raf_omru_ay,
+    ambalaj_spesifikasyonu:s.ambalaj_spesifikasyonu||'', raf_omru_ay:s.raf_omru_ay, raf_omru_birim:s.raf_omru_birim||'ay', urun_olcusu:s.urun_olcusu||'',
     onaylayan_rol:s.onaylayan_rol||'', ozel_alanlar:s.ozel_alanlar||[],
     fiziksel_kimyasal_parametreler:s.fiziksel_kimyasal_parametreler||[],
     mikrobiyolojik_parametreler:s.mikrobiyolojik_parametreler||[],
@@ -1115,7 +1165,7 @@ function parametreSatiriHtml(cls, p){
     +'<input class="pAd" placeholder="Parametre (ör. Nem)" value="'+esc(p.parametre||'')+'">'
     +'<input class="pMin" placeholder="Min (ör. 10)" value="'+esc(p.min||'')+'">'
     +'<input class="pMax" placeholder="Max (ör. 10,5)" value="'+esc(p.max||'')+'">'
-    +'<div style="display:flex;gap:6px"><input class="pBirim" placeholder="Birim (%, kob/g...)" value="'+esc(p.birim||'')+'" style="flex:1">'
+    +'<div style="display:flex;gap:6px"><select class="pBirim" style="flex:1">'+ursSecenek('birimler', p.birim||'', 'Birim')+'</select>'
     +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="'+cls+'Row" title="Kaldır">&times;</button></div></div>';
 }
 function parametreEkle(cls, wrapId){
@@ -1171,8 +1221,8 @@ function yasalEkle(deger){
 function gramajSatiriHtml(g){
   g = g||{};
   return '<div class="grid4 gramajRow" style="margin-bottom:4px">'
-    +'<input class="gmMiktar" placeholder="Net Miktar (ör. 500 g)" value="'+esc(g.net_miktar||'')+'">'
-    +'<input class="gmPaletOlcu" placeholder="Palet Ölçüsü (ör. 120x80 cm)" value="'+esc(g.palet_olcusu||'')+'">'
+    +'<select class="gmMiktar">'+ursSecenek('paket_olculeri', g.net_miktar||'', 'Net miktar / paket')+'</select>'
+    +'<select class="gmPaletOlcu">'+ursSecenek('palet_olculeri', g.palet_olcusu||'', 'Palet ölçüsü / dökme')+'</select>'
     +'<input class="gmPaletAdet" type="number" placeholder="Palette Adet" value="'+(g.palette_adet!=null?g.palette_adet:'')+'">'
     +'<div style="display:flex;gap:6px"><input class="gmNot" placeholder="Not (ops.)" value="'+esc(g.not||'')+'" style="flex:1">'
     +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="gramajRow" title="Kaldır">&times;</button></div></div>';
@@ -1187,7 +1237,7 @@ function gramajEkle(){
 // ---------------------------------------------------------------------------
 function ambalajSatiriHtml(deger){
   return '<div class="ambalajRow" style="display:flex;gap:6px;margin-bottom:4px">'
-    +'<input class="amAd" value="'+esc(deger||'')+'" placeholder="ör. OPP-CPP, PE, Kraft Torba" style="flex:1">'
+    +'<select class="amAd" style="flex:1">'+ursSecenek('ambalaj_tipleri', deger||'', 'Ambalaj tipi')+'</select>'
     +'<button type="button" class="x" data-urs-act="removeRow" data-row-class="ambalajRow" title="Kaldır">&times;</button></div>';
 }
 function ambalajEkle(){
@@ -1332,7 +1382,8 @@ function openSpecDetay(specId, urunIdForNew){
     +'<div><label>İşletme Kayıt / Onay No</label><input id="spKayitNo" value="'+esc(f.isletme_kayit_no)+'"></div></div>'
     +'<div class="grid3"><div><label>Menşei Ülke</label><input id="spMensei" value="'+esc(f.mensei_ulke)+'"></div>'
     +'<div><label>Alkol Derecesi (%) — varsa</label><input id="spAlkol" type="number" step="0.1" value="'+(f.alkol_derecesi!=null?f.alkol_derecesi:'')+'"></div>'
-    +'<div><label>Raf Ömrü (ay)</label><input id="spRafOmru" type="number" value="'+(f.raf_omru_ay!=null?f.raf_omru_ay:'')+'"></div></div>'
+    +'<div><label>Raf Ömrü</label><div style="display:flex;gap:6px"><input id="spRafOmru" type="number" min="0" value="'+(f.raf_omru_ay!=null?f.raf_omru_ay:'')+'" style="flex:1"><select id="spRafBirim" style="width:96px;flex:0 0 96px">'+['gün','ay','yıl'].map(function(b){return '<option'+((f.raf_omru_birim||'ay')===b?' selected':'')+'>'+b+'</option>';}).join('')+'</select></div></div></div>'
+    +'<div><label>Ürün Ölçüsü <span class="muted">(opsiyonel — ör. 20 × 12 × 5 cm, Ø 8 cm)</span></label><input id="spUrunOlcu" value="'+esc(f.urun_olcusu||'')+'"></div>'
     +'<div><label>Kullanım Talimatı</label><textarea id="spKullanim" rows="2">'+esc(f.kullanim_talimati)+'</textarea></div>'
 
     +'<div class="sec-h">Gıda Güvenliği / BRCGS Ek Bilgileri</div>'
@@ -1341,11 +1392,11 @@ function openSpecDetay(specId, urunIdForNew){
     +'<div><label>Alerjen Beyanı <button type="button" class="ek-link" style="font-size:11px" data-urs-act="alerjenBeyaniDoldur" data-urunid="'+urunId+'">reçeteden otomatik doldur</button></label><textarea id="spAlerjenBeyani" rows="4">'+esc(f.alerjen_beyani)+'</textarea></div>'
     +'<div><label>Çapraz Bulaşma Riski</label><textarea id="spCapraz" rows="3">'+esc(f.capraz_bulasma_riski)+'</textarea></div>'
 
-    +'<div class="sec-h">Gramaj / Palet Seçenekleri <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(aynı ürünün farklı ambalaj gramajları için ayrı palet bilgisi)</span></div>'
+    +'<div class="sec-h">Net Miktar / Palet Seçenekleri <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ör. 500 g · 1 kg · 5 kg — her biri için ayrı palet ya da dökme gönderim; listeler Ayarlar\'dan genişletilir)</span></div>'
     +'<div id="gramajWrap">'+(f.gramaj_secenekleri.length?f.gramaj_secenekleri.map(gramajSatiriHtml).join(''):'')+'</div>'
     +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="gramajEkle">+ Gramaj/Palet Ekle</button>':'')
 
-    +'<div class="sec-h">Ambalaj Malzeme Seçenekleri</div>'
+    +'<div class="sec-h">Ambalaj Tipleri <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(birden çok seçilebilir)</span></div>'
     +'<div id="ambalajWrap">'+(f.ambalaj_secenekleri.length?f.ambalaj_secenekleri.map(ambalajSatiriHtml).join(''):'')+'</div>'
     +(ce?'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="ambalajEkle">+ Ambalaj Seçeneği Ekle</button>':'')
     +'<div><label>Ambalaj Spesifikasyonu (boyut/katman detayı)</label><textarea id="spAmbalaj" rows="3">'+esc(f.ambalaj_spesifikasyonu)+'</textarea></div>'
@@ -1452,7 +1503,7 @@ async function specKaydet(specId, urunId, durum){
     tavsiye_son_tuketim:val('spTETT').trim(), muhafaza_kosullari:val('spMuhafaza').trim(),
     isletme_adi_adres:val('spIsletme').trim(), isletme_kayit_no:val('spKayitNo').trim(),
     mensei_ulke:val('spMensei').trim(), kullanim_talimati:val('spKullanim').trim(),
-    alkol_derecesi:numOrNull('spAlkol'), raf_omru_ay:numOrNull('spRafOmru'),
+    alkol_derecesi:numOrNull('spAlkol'), raf_omru_ay:numOrNull('spRafOmru'), raf_omru_birim:val('spRafBirim')||'ay', urun_olcusu:val('spUrunOlcu').trim(),
     hedef_tuketici_grubu:val('spHedefGrup').trim(), tasima_kosullari:val('spTasima').trim(),
     alerjen_beyani:val('spAlerjenBeyani').trim(), capraz_bulasma_riski:val('spCapraz').trim(),
     enerji_kcal:numOrNull('spEnerji'), yag_g:numOrNull('spYag'), doymus_yag_g:numOrNull('spDoymusYag'), trans_yag_g:numOrNull('spTransYag'),
@@ -1538,6 +1589,8 @@ async function specYazdir(specId){
     +'<table><tr><th colspan="2">TGK Madde 9 — Zorunlu Bilgiler</th></tr>'
     +'<tr><td>Net Miktar</td><td>'+esc(s.net_miktar||'—')+'</td></tr>'
     +'<tr><td>Tavsiye/Son Tüketim</td><td>'+esc(s.tavsiye_son_tuketim||'—')+'</td></tr>'
+    +(s.raf_omru_ay!=null?'<tr><td>Raf Ömrü</td><td>'+esc(s.raf_omru_ay)+' '+esc(s.raf_omru_birim||'ay')+'</td></tr>':'')
+    +(s.urun_olcusu?'<tr><td>Ürün Ölçüsü</td><td>'+esc(s.urun_olcusu)+'</td></tr>':'')
     +'<tr><td>Muhafaza Koşulları</td><td>'+esc(s.muhafaza_kosullari||'—')+'</td></tr>'
     +'<tr><td>İşletme</td><td>'+esc(s.isletme_adi_adres||'—')+' ('+esc(s.isletme_kayit_no||'—')+')</td></tr>'
     +'<tr><td>Menşei Ülke</td><td>'+esc(s.mensei_ulke||'—')+'</td></tr>'
@@ -1548,10 +1601,10 @@ async function specYazdir(specId){
     +'<tr><td>Taşıma Koşulları</td><td>'+esc(s.tasima_kosullari||'—')+'</td></tr>'
     +'<tr><td>Alerjen Beyanı</td><td>'+esc(s.alerjen_beyani||'—')+'</td></tr>'
     +'<tr><td>Çapraz Bulaşma Riski</td><td>'+esc(s.capraz_bulasma_riski||'—')+'</td></tr></table>'
-    +((s.gramaj_secenekleri&&s.gramaj_secenekleri.length)?('<table><tr><th colspan="3">Gramaj / Palet Seçenekleri</th></tr>'
+    +((s.gramaj_secenekleri&&s.gramaj_secenekleri.length)?('<table><tr><th colspan="3">Net Miktar / Palet Seçenekleri</th></tr>'
       +'<tr><td><b>Net Miktar</b></td><td><b>Palet Ölçüsü</b></td><td><b>Palette Adet</b></td></tr>'
       +s.gramaj_secenekleri.map(function(g){return '<tr><td>'+esc(g.net_miktar||'—')+'</td><td>'+esc(g.palet_olcusu||'—')+'</td><td>'+(g.palette_adet!=null?g.palette_adet:'—')+'</td></tr>';}).join('')+'</table>'):'')
-    +((s.ambalaj_secenekleri&&s.ambalaj_secenekleri.length)?('<table><tr><th colspan="2">Ambalaj Malzeme Seçenekleri</th></tr><tr><td colspan="2">'+s.ambalaj_secenekleri.map(esc).join(', ')+'</td></tr></table>'):'')
+    +((s.ambalaj_secenekleri&&s.ambalaj_secenekleri.length)?('<table><tr><th colspan="2">Ambalaj Tipleri</th></tr><tr><td colspan="2">'+s.ambalaj_secenekleri.map(esc).join(', ')+'</td></tr></table>'):'')
     +(s.ambalaj_spesifikasyonu?('<table><tr><th colspan="2">Ambalaj Spesifikasyonu</th></tr><tr><td colspan="2">'+esc(s.ambalaj_spesifikasyonu)+'</td></tr></table>'):'')
     +'<table><tr><th colspan="2">Beslenme Bildirimi (100 g/ml başına)</th></tr>'
     +'<tr><td>Enerji</td><td>'+fmt(s.enerji_kcal)+' kcal</td></tr>'
@@ -1573,9 +1626,7 @@ async function specYazdir(specId){
     +((s.duyusal_kriterler_yapilandirilmis&&s.duyusal_kriterler_yapilandirilmis.length)?('<table><tr><th colspan="2">Duyusal Kriterler</th></tr>'
       +s.duyusal_kriterler_yapilandirilmis.map(function(d){return '<tr><td>'+esc(d.kriter)+'</td><td>'+esc(d.aciklama||'—')+'</td></tr>';}).join('')+'</table>'):'')
     +((s.yasal_dayanaklar&&s.yasal_dayanaklar.length)?('<table><tr><th colspan="2">Yasal Dayanaklar</th></tr><tr><td colspan="2"><ul style="margin:0;padding-left:18px">'+s.yasal_dayanaklar.map(function(y){return '<li>'+esc(y)+'</li>';}).join('')+'</ul></td></tr></table>'):'')
-    +'<table><tr><th colspan="2">Reçete (İçindekiler, azalan ağırlık sırasıyla)</th></tr>'
-    +receteOf(s.urun_id).map(function(r){return '<tr><td>'+esc(r.hammadde_adi)+'</td><td>'+(r.oran_yuzde!=null?fmt(r.oran_yuzde)+'%':'—')+'</td></tr>';}).join('')
-    +'</table>'
+    +'<table><tr><th colspan="2">İçindekiler (azalan ağırlık sırasıyla)</th></tr><tr><td colspan="2">'+(icindekilerMetni(s.urun_id)||'—')+'</td></tr></table>'
     +((s.ozel_alanlar&&s.ozel_alanlar.length)?('<table><tr><th colspan="2">Özel Alanlar</th></tr>'
       +s.ozel_alanlar.map(function(oa){return '<tr><td>'+esc(oa.ad)+'</td><td>'+esc(oa.deger)+'</td></tr>';}).join('')+'</table>'):'')
     +((s.musteri_spesifikasyonlari&&s.musteri_spesifikasyonlari.length)?('<table><tr><th colspan="2">Müşteri Spesifikasyonu Referans Dosyaları</th></tr>'
@@ -1594,10 +1645,7 @@ function etiketMetniGoster(specId){
   var u = state.urunler.find(function(x){return x.id===s.urun_id;});
   var kalemler = receteOf(s.urun_id);
   var alerjenler = urunAlerjenleri(s.urun_id);
-  var icindekiler = kalemler.map(function(r){
-    var vurgu = (r.alerjenler||[]).length>0;
-    return vurgu ? ('<b>'+esc(r.hammadde_adi.toUpperCase())+'</b>') : esc(r.hammadde_adi);
-  }).join(', ');
+  var icindekiler = icindekilerMetni(s.urun_id);
   var besin = ['Enerji: '+fmt(s.enerji_kcal)+' kcal','Yağ: '+fmt(s.yag_g)+' g','Doymuş Yağ: '+fmt(s.doymus_yag_g)+' g',
     'Karbonhidrat: '+fmt(s.karbonhidrat_g)+' g','Şeker: '+fmt(s.seker_g)+' g','Protein: '+fmt(s.protein_g)+' g','Tuz: '+fmt(s.tuz_g)+' g'].join(' · ');
   var metin = ''
@@ -1744,7 +1792,10 @@ function renderAyarlar(){
     +'<div><label>Üst Yönetici E-postası</label><input id="fbUstEposta" value="'+esc(fb.ust_yonetici_eposta||'')+'" placeholder="onaylar süresi geldiğinde bilgilendirilir" '+(ce?'':'disabled')+'></div></div>'
     +'<div class="login-err" id="fbHata"></div>'
     +(ce?'<button class="btn btn-leaf" style="justify-self:start" data-urs-act="firmaKaydet">Kaydet</button>':'')
-    +'</div></div></div></div>';
+    +'</div></div></div></div>'
+    +'<div class="panel"><div class="ph"><h2>Seçim Listeleri</h2></div><div class="pb">'
+    +'<div class="note">Spesifikasyon formundaki birim, ambalaj tipi, paket ve palet ölçüsü seçenekleri buradan yönetilir. Listede olmayan bir değer eklediğinizde tüm spesifikasyonlarda seçilebilir olur.</div>'
+    +ursListelerHtml(ce)+'</div></div>';
 }
 var FIRMA_LOGO_YOLU = null;
 async function firmaLogoYukle(){
@@ -1892,6 +1943,9 @@ var URS_ACTIONS = {
   urunDuzenleVeKapat: function(el){ closeModal(); openUrunForm(el.dataset.id); },
   receteAcVeKapat: function(el){ closeModal(); openReceteDetay(el.dataset.id); },
   openSpecDetayVeKapat: function(el){ closeModal(); if(el.dataset.id) openSpecDetay(el.dataset.id); else openSpecDetay(null, el.dataset.urunid); },
+  ursListeEkle: function(el){ ursListeEkle(el.dataset.ad); },
+  ursListeSil: function(el){ ursListeSil(el.dataset.ad, el.dataset.deger); },
+  altBilesenEkle: function(){ var c=document.getElementById('altBilesenWrap'); if(c) c.insertAdjacentHTML('beforeend', altBilesenSatiri({})); },
   removeRow: function(el){ el.closest('.'+el.dataset.rowClass).remove(); },
   gorselSil: function(el){ gorselSil(el); },
   musteriSpecSil: function(el){ musteriSpecSil(el); },
