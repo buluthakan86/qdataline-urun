@@ -164,12 +164,23 @@ tr:hover td{background:var(--mint-2)}
 .rep-inner th{background:#EEF5DC}
 .rep-inner h2{font-size:16px; margin-bottom:4px}
 .rep-inner .rep-sub{color:#5D7238; font-size:12px; margin-bottom:16px}
+/* 25.09.2026: pencere içindeki alanlar sütunu tam doldursun (spesifikasyon formunda kutular çok küçüktü) */
+.modal .mb input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=color]), .modal .mb select, .modal .mb textarea{ width:100%; box-sizing:border-box; }
+.modal .mb textarea{ min-height:84px; }
 @media print{
   aside.side, .topbar, .mf, .x { display:none !important; }
   .overlay{position:static; background:none; padding:0}
   .modal{box-shadow:none; max-width:none; max-height:none}
   .mh{display:none}
   body{background:#fff}
+  /* 25.09.2026: yazdırma görünümünde arkadaki uygulama ekranı basılmasın, yalnız açık pencere */
+  body.yazdir-modal > *:not(#overlay){ display:none !important; }
+  body.yazdir-modal #overlay{ display:block !important; position:static !important; inset:auto !important; overflow:visible !important; }
+  body.yazdir-modal .modal{ width:auto !important; max-width:none !important; max-height:none !important; overflow:visible !important; border:none !important; margin:0 !important; }
+  body.yazdir-modal .rep-inner{ padding:0 !important; }
+  body.yazdir-modal .mh, body.yazdir-modal .mf{ display:none !important; }
+  body.yazdir-modal .modal, body.yazdir-modal .mb{ background:#fff !important; box-shadow:none !important; padding:0 !important; }
+  body.yazdir-modal .rep-inner, body.yazdir-modal .rep-inner *{ color:#1E2A10 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -779,7 +790,8 @@ function render(){
   wireView();
 }
 function wireView(){
-  document.querySelectorAll('[data-urunduzenle]').forEach(function(b){ b.onclick=function(){ openUrunForm(b.dataset.urunduzenle); }; });
+  document.querySelectorAll('[data-urunduzenle]').forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); openUrunForm(b.dataset.urunduzenle); }; });
+  document.querySelectorAll('[data-urundetay]').forEach(function(tr){ tr.onclick=function(e){ if(e.target.closest('button,a,input,select')) return; openUrunDetay(tr.dataset.urundetay); }; });
   document.querySelectorAll('[data-urunsil]').forEach(function(b){ b.onclick=function(){ urunSil(b.dataset.urunsil); }; });
   document.querySelectorAll('[data-recetegoster]').forEach(function(b){ b.onclick=function(){ openReceteDetay(b.dataset.recetegoster); }; });
   document.querySelectorAll('[data-specgoster]').forEach(function(b){ b.onclick=function(){ openSpecDetay(b.dataset.specgoster); }; });
@@ -874,7 +886,7 @@ function renderUrunler(){
   var rows = urunListe.map(function(u){
     var spec = specOf(u.id);
     var recSayisi = receteOf(u.id).length;
-    return '<tr>'
+    return '<tr class="clk" data-urundetay="'+u.id+'" style="cursor:pointer" title="Ürün detayını aç">'
       +'<td><b>'+esc(u.ad)+'</b></td><td>'+(esc(u.kategori)||'—')+'</td>'
       +'<td>'+(u.durum==='Aktif'?'<span class="pill ok">Aktif</span>':'<span class="pill na">Pasif</span>')+'</td>'
       +'<td>'+recSayisi+' hammadde'+(recSayisi?' <a href="#" class="ek-link" data-recetegoster="'+u.id+'">(görüntüle)</a>':'')+'</td>'
@@ -941,6 +953,26 @@ function renderReceteler(){
     +(rows?'<table><thead><tr><th>Ürün</th><th>Hammadde Sayısı</th><th>Toplam Oran</th><th>Alerjenler</th></tr></thead><tbody>'+rows+'</tbody></table>'
       :emptyState('Henüz aktif ürün yok', 'Reçete girebilmek için önce "Ürünler" ekranından bir ürün ekleyin.', '+ Ürünler’e Git', 'showView', ' data-view="urunler"'))
     +'</div></div></div>';
+}
+/* 25.09.2026: ürün satırına tıklayınca ürün kartı — bilgi, reçete özeti, spesifikasyon, alerjen, sertifika tek pencerede */
+function openUrunDetay(urunId){
+  var u = state.urunler.find(function(x){return x.id===urunId;}); if(!u) return;
+  var kalemler = receteOf(urunId), spec = specOf(urunId), alerj = urunAlerjenleri(urunId), ce = canEdit();
+  var serts = state.sertifikalar.filter(function(s){return s.urun_id===urunId;});
+  var satir = function(k,v){ return '<tr><td style="width:36%;color:var(--muted)">'+k+'</td><td>'+v+'</td></tr>'; };
+  openModal('<div class="mh"><b>'+esc(u.ad)+'</b>'+(u.durum==='Aktif'?'<span class="pill ok">Aktif</span>':'<span class="pill na">Pasif</span>')+'<button class="x" data-urs-act="closeModal">&times;</button></div>'
+    +'<div class="mb">'
+    +'<table>'+satir('Kategori', esc(u.kategori||'—'))+satir('Açıklama', esc(u.aciklama||'—'))
+    +satir('Reçete', kalemler.length? (kalemler.length+' hammadde · '+kalemler.slice(0,6).map(function(r){return esc(r.hammadde_adi);}).join(', ')+(kalemler.length>6?' …':'')) : '<span class="muted">Girilmedi</span>')
+    +satir('Spesifikasyon', spec? ('<span class="pill blue">'+esc(spec.spec_kodu||'')+'</span> v'+spec.versiyon_no+' · '+esc(spec.durum)) : '<span class="muted">Yok</span>')
+    +satir('Alerjenler', alerj.length? alerj.map(function(a){return '<span class="pill warn" style="margin-right:4px">'+esc(a)+'</span>';}).join('') : '<span class="muted">—</span>')
+    +satir('Sertifikalar', serts.length? serts.map(function(s){return esc(s.sertifika_turu)+' ('+esc(sertDurum(s))+')';}).join(', ') : '<span class="muted">—</span>')
+    +'</table></div>'
+    +'<div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Kapat</button>'
+    +(ce?'<button class="btn btn-line" data-urs-act="urunDuzenleVeKapat" data-id="'+u.id+'">✏️ Düzenle</button>':'')
+    +'<button class="btn btn-line" data-urs-act="receteAcVeKapat" data-id="'+u.id+'">Reçete</button>'
+    +(spec?'<button class="btn btn-leaf" data-urs-act="openSpecDetayVeKapat" data-id="'+spec.id+'">Spesifikasyonu Aç →</button>':(ce?'<button class="btn btn-leaf" data-urs-act="openSpecDetayVeKapat" data-urunid="'+u.id+'">+ Spesifikasyon Oluştur</button>':''))
+    +'</div>');
 }
 function openReceteDetay(urunId){
   var u = state.urunler.find(function(x){return x.id===urunId;});
@@ -1034,6 +1066,11 @@ function renderSpesifikasyonlar(){
 
 function specFormAlanlari(s){
   s = s || {};
+  /* 25.09.2026: yeni spesifikasyonda işletme adı/adresi ve kayıt/onay no Firma Bilgileri'nden gelir */
+  if(!s.id){ var _fb = state.firmaBilgisi || {};
+    if(!s.isletme_adi_adres && (_fb.firma_adi||_fb.adres)) s.isletme_adi_adres = [_fb.firma_adi,_fb.adres].filter(Boolean).join(' — ');
+    if(!s.isletme_kayit_no && (_fb.isletme_kayit_no||_fb.isletme_onay_no)) s.isletme_kayit_no = [_fb.isletme_kayit_no, _fb.isletme_onay_no?('Onay: '+_fb.isletme_onay_no):''].filter(Boolean).join(' / ');
+  }
   return {
     gida_adi:s.gida_adi||'', net_miktar:s.net_miktar||'', tavsiye_son_tuketim:s.tavsiye_son_tuketim||'',
     muhafaza_kosullari:s.muhafaza_kosullari||'', isletme_adi_adres:s.isletme_adi_adres||'', isletme_kayit_no:s.isletme_kayit_no||'',
@@ -1292,7 +1329,7 @@ function openSpecDetay(specId, urunIdForNew){
     +'<div class="grid2"><div><label>Tavsiye Edilen/Son Tüketim Tarihi</label><input id="spTETT" value="'+esc(f.tavsiye_son_tuketim)+'" placeholder="ör. Üretimden itibaren 12 ay"></div>'
     +'<div><label>Muhafaza/Depolama Koşulları</label><input id="spMuhafaza" value="'+esc(f.muhafaza_kosullari)+'" placeholder="ör. Serin ve kuru yerde saklayınız"></div></div>'
     +'<div class="grid2"><div><label>İşletme Adı ve Adresi</label><input id="spIsletme" value="'+esc(f.isletme_adi_adres)+'"></div>'
-    +'<div><label>İşletme Kayıt No</label><input id="spKayitNo" value="'+esc(f.isletme_kayit_no)+'"></div></div>'
+    +'<div><label>İşletme Kayıt / Onay No</label><input id="spKayitNo" value="'+esc(f.isletme_kayit_no)+'"></div></div>'
     +'<div class="grid3"><div><label>Menşei Ülke</label><input id="spMensei" value="'+esc(f.mensei_ulke)+'"></div>'
     +'<div><label>Alkol Derecesi (%) — varsa</label><input id="spAlkol" type="number" step="0.1" value="'+(f.alkol_derecesi!=null?f.alkol_derecesi:'')+'"></div>'
     +'<div><label>Raf Ömrü (ay)</label><input id="spRafOmru" type="number" value="'+(f.raf_omru_ay!=null?f.raf_omru_ay:'')+'"></div></div>'
@@ -1700,6 +1737,8 @@ function renderAyarlar(){
     +'<div><label>Adres</label><textarea id="fbAdres" rows="2" '+(ce?'':'disabled')+'>'+esc(fb.adres||'')+'</textarea></div>'
     +'<div class="grid2"><div><label>Telefon</label><input id="fbTel" value="'+esc(fb.telefon||'')+'" '+(ce?'':'disabled')+'></div>'
     +'<div><label>E-posta</label><input id="fbEposta" value="'+esc(fb.eposta||'')+'" '+(ce?'':'disabled')+'></div></div>'
+    +'<div class="grid2"><div><label>İşletme Kayıt No</label><input id="fbKayitNo" value="'+esc(fb.isletme_kayit_no||'')+'" placeholder="ör. TR-34-K-001234" '+(ce?'':'disabled')+'></div>'
+    +'<div><label>İşletme Onay No</label><input id="fbOnayNo" value="'+esc(fb.isletme_onay_no||'')+'" placeholder="ör. TR-34-A-000123" '+(ce?'':'disabled')+'></div></div>'
     +'<div class="sec-h">Yıllık Gözden Geçirme Bildirimi</div>'
     +'<div class="grid2"><div><label>Üst Yönetici Adı</label><input id="fbUstAd" value="'+esc(fb.ust_yonetici_ad||'')+'" '+(ce?'':'disabled')+'></div>'
     +'<div><label>Üst Yönetici E-postası</label><input id="fbUstEposta" value="'+esc(fb.ust_yonetici_eposta||'')+'" placeholder="onaylar süresi geldiğinde bilgilendirilir" '+(ce?'':'disabled')+'></div></div>'
@@ -1727,7 +1766,8 @@ async function firmaKaydet(){
   var e = document.getElementById('fbHata');
   var rec = {
     firma_adi: val('fbAd').trim(), adres: val('fbAdres').trim(), telefon: val('fbTel').trim(), eposta: val('fbEposta').trim(),
-    ust_yonetici_ad: val('fbUstAd').trim(), ust_yonetici_eposta: val('fbUstEposta').trim()
+    ust_yonetici_ad: val('fbUstAd').trim(), ust_yonetici_eposta: val('fbUstEposta').trim(),
+    isletme_kayit_no: val('fbKayitNo').trim(), isletme_onay_no: val('fbOnayNo').trim()
   };
   if(FIRMA_LOGO_YOLU) rec.logo_url = FIRMA_LOGO_YOLU;
   try{
@@ -1849,6 +1889,8 @@ var URS_ACTIONS = {
   openReceteKalemForm: function(el){ openReceteKalemForm(el.dataset.urunid, el.dataset.id); },
   receteKalemSil: function(el){ receteKalemSil(el.dataset.id, el.dataset.urunid); },
   receteKalemKaydet: function(el){ receteKalemKaydet(el.dataset.urunid, el.dataset.id||''); },
+  urunDuzenleVeKapat: function(el){ closeModal(); openUrunForm(el.dataset.id); },
+  receteAcVeKapat: function(el){ closeModal(); openReceteDetay(el.dataset.id); },
   openSpecDetayVeKapat: function(el){ closeModal(); if(el.dataset.id) openSpecDetay(el.dataset.id); else openSpecDetay(null, el.dataset.urunid); },
   removeRow: function(el){ el.closest('.'+el.dataset.rowClass).remove(); },
   gorselSil: function(el){ gorselSil(el); },
@@ -1867,7 +1909,7 @@ var URS_ACTIONS = {
   etiketMetniGoster: function(el){ etiketMetniGoster(el.dataset.id); },
   specKaydet: function(el){ specKaydet(el.dataset.id||'', el.dataset.urunid, el.dataset.durum); },
   specOnayEmailGonder: function(el){ specOnayEmailGonder(el.dataset.id); },
-  printPage: function(){ window.print(); },
+  printPage: function(){ document.body.classList.add('yazdir-modal'); var bitir=function(){ document.body.classList.remove('yazdir-modal'); window.removeEventListener('afterprint', bitir); }; window.addEventListener('afterprint', bitir); window.print(); setTimeout(bitir, 1500); },
   etiketMetniKopyala: function(){ etiketMetniKopyala(); },
   openSertFormYeni: function(){ var sel=document.getElementById('sertUrunSec'); openSertForm(null, sel?sel.value:''); },
   sertKaydet: function(el){ sertKaydet(el.dataset.id||'', el.dataset.urunid||''); },

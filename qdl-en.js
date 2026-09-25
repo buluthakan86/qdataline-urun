@@ -18,6 +18,8 @@ window.QDL_EN = {
   'onaylar süresi geldiğinde bilgilendirilir': 'is notified when approvals are due',
   'Filtre:': 'Filter:', '✕ Filtreyi kaldır': '✕ Clear filter', 'Aktif ürünler': 'Active products', 'Reçetesi olan ürünler': 'Products with a recipe',
   'Onaylı spesifikasyonlar': 'Approved specifications', 'Taslak spesifikasyonlar': 'Draft specifications', 'Alerjen içeren ürünler': 'Products with allergens',
-  'Geçerli olmayan / süresi yaklaşan sertifikalar': 'Invalid / expiring certificates'
+  'Geçerli olmayan / süresi yaklaşan sertifikalar': 'Invalid / expiring certificates',
+  'Ürün detayını aç': 'Open product details', 'Açıklama': 'Description', 'Girilmedi': 'Not entered', 'Sertifikalar': 'Certificates', '✏️ Düzenle': '✏️ Edit', 'Kapat': 'Close', 'Spesifikasyonu Aç →': 'Open Specification →',
+  'İşletme Kayıt No': 'Business Registration No', 'İşletme Onay No': 'Business Approval No', 'İşletme Kayıt / Onay No': 'Business Registration / Approval No', 'Önceki toplantıdan otomatik önerildi, değiştirebilirsiniz.': 'Suggested from the previous meeting; you can change it.'
 };
 window.QDL_EN_RE = [ [/^(\d+) hammadde$/, '$1 ingredients'] ];
