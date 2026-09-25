@@ -1716,6 +1716,8 @@ document.getElementById('overlay').addEventListener('click', function(e){
   if(e.target.id !== 'overlay') return;
   var mb = document.getElementById('modalBody');
   var formVarMi = mb.querySelector('input:not([disabled]):not([type="file"]), textarea:not([disabled]), select:not([disabled])');
+  // 25.09.2026: ortak modül renkli pencere, YALNIZ gerçek değişiklikte sorar (qdl-dialog.js)
+  if(formVarMi && window.qdlKapatSor){ qdlKapatSor(mb).then(function(ok){ if(ok){ closeModal(); } }); return; }
   if(formVarMi && !confirm('Kaydedilmemiş bilgiler kaybolacak. Kapatmak istediğinize emin misiniz?')) return;
   closeModal();
 });

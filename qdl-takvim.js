@@ -95,6 +95,7 @@
     }
     var setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     setter.call(el, yeni);
+    el.__qdlTk = true; // qdl-dialog.js: takvimden secim de "degisiklik" sayilir
     el.dispatchEvent(new Event('input', { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
