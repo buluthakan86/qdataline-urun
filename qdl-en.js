@@ -1,6 +1,20 @@
 /* qdl-en.js — Reçete ve Spesifikasyon (URS): EN modunda Türkçe kalan arayüz metinleri (qdl-ceviri.js). 25.09.2026 */
 window.QDL_EN = {
   /* 25.09.2026 Ar-Ge projeleri */
+  "Proses / Belge": "Process / Documents",
+  "hammaddenin kendi raf ömrü": "shelf life of the ingredient itself",
+  "Belgeler": "Documents",
+  "teknik föy, MSDS, sertifika — PDF/Word/Excel/görsel": "technical data sheet, MSDS, certificate — PDF/Word/Excel/image",
+  "Teknik Föy": "Technical Data Sheet",
+  "MSDS": "MSDS",
+  "Sertifika": "Certificate",
+  "Diğer": "Other",
+  "Önce dosya seçin.": "Select a file first.",
+  "Dosya 15 MB’tan büyük olamaz.": "File cannot exceed 15 MB.",
+  "Yüklendi — kaydetmeyi unutmayın.": "Uploaded — don't forget to save.",
+  "ör. Üretimden itibaren 18 ay": "e.g. 18 months from production",
+  "ornek@firma.com": "name@company.com",
+  "Onaylı spesifikasyonların yıllık gözden geçirmesine 30, 7 ve 0 gün kala (vadesi geçmişse her pazartesi) bu adrese otomatik özet e-posta gider. Boş bırakılırsa gönderilmez.": "An automatic summary e-mail is sent to this address 30, 7 and 0 days before the annual review of approved specifications (every Monday if overdue). Leave blank to disable.",
   "Numune": "Sample",
   "₺/kg (ops.)": "₺/kg (opt.)",
   "Birim fiyat — maliyet hesabı için": "Unit price — for cost calculation",

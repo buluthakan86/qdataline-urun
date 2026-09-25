@@ -1038,7 +1038,7 @@ function openReceteDetay(urunId){
       +'<td class="muted">'+(r.oran_yuzde!=null?fmt(Number(r.oran_yuzde)*10)+' kg':'—')+'</td>'
       +'<td>'+(esc(r.tedarikci_adi)||'<span class="muted">—</span>')+'</td>'
       +'<td>'+((r.alerjenler||[]).length?r.alerjenler.map(function(a){return '<span class="pill warn" style="margin-right:3px;font-size:10px">'+esc(a)+'</span>';}).join(''):'<span class="muted">—</span>')+'</td>'
-      +'<td>'+(r.proses_talimati?('<span class="ek-link" style="cursor:default" title="'+esc(r.proses_talimati)+'">📋</span>'):'<span class="muted">—</span>')+'</td>'
+      +'<td style="white-space:nowrap">'+(r.proses_talimati?('<span class="ek-link" style="cursor:default" title="'+esc(r.proses_talimati)+'">📋</span>'):'<span class="muted">—</span>')+((r.dosyalar||[]).length?' <span class="pill blue" style="font-size:10.5px" title="'+esc((r.dosyalar||[]).map(function(x){return (x.tur||'')+': '+x.ad;}).join(', '))+'">📎 '+r.dosyalar.length+'</span>':'')+(r.raf_omru?' <span class="muted" style="font-size:11px" title="'+esc(t('Raf Ömrü'))+'">⏳ '+esc(r.raf_omru)+'</span>':'')+'</td>'
       +'<td>'+(ce?'<button class="btn btn-line btn-sm" data-urs-act="openReceteKalemForm" data-urunid="'+urunId+'" data-id="'+r.id+'">✏️</button> <button class="btn btn-danger btn-sm" data-urs-act="receteKalemSil" data-id="'+r.id+'" data-urunid="'+urunId+'">🗑</button>':'')+'</td>'
       +'</tr>';
   }).join('');
@@ -1046,7 +1046,7 @@ function openReceteDetay(urunId){
     +'<div class="mb">'
     +(ce?'<button class="btn btn-line btn-sm" data-urs-act="openReceteKalemForm" data-urunid="'+urunId+'" style="justify-self:start">+ Hammadde Ekle</button>':'')
     +'<div class="tbl-wrap" style="overflow-x:auto">'
-    +(rows?'<table><thead><tr><th>#</th><th>Hammadde</th><th>Oran</th><th>1 Ton İçin</th><th>Tedarikçi</th><th>Alerjenler</th><th>Proses</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +(rows?'<table><thead><tr><th>#</th><th>Hammadde</th><th>Oran</th><th>1 Ton İçin</th><th>Tedarikçi</th><th>Alerjenler</th><th>Proses / Belge</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
       :'<div class="empty">Bu ürün için henüz hammadde girilmedi.</div>')
     +'</div>'
     +(kalemler.length?'<div style="text-align:right;font-size:12px" class="muted">Toplam: '+fmt(kalemler.reduce(function(s,r){return s+(Number(r.oran_yuzde)||0);},0))+'% · 1 ton için toplam: '+fmt(kalemler.reduce(function(s,r){return s+(Number(r.oran_yuzde)||0);},0)*10)+' kg</div>':'')
@@ -1056,8 +1056,28 @@ function openReceteDetay(urunId){
 }
 function altBilesenSatiri(a){ a=a||{};
   return '<div class="altBilesenRow" style="display:grid;grid-template-columns:1fr 130px auto;gap:6px;margin-bottom:4px"><input class="abAd" placeholder="Alt bileşen adı" value="'+esc(a.ad||'')+'"><input class="abOran" type="number" step="0.01" min="0" max="100" placeholder="% (hammadde içinde)" value="'+(a.oran!=null?a.oran:'')+'"><button type="button" class="x" data-urs-act="removeRow" data-row-class="altBilesenRow" title="Kaldır">&times;</button></div>'; }
+var RK_DOSYALAR = [];
+function rkDosyaSatiri(x){ return '<div class="rkDosyaRow" data-yol="'+esc(x.yol)+'" style="display:flex;gap:8px;align-items:center;padding:3px 0"><span class="pill blue" style="font-size:10.5px">'+esc(t(x.tur||'Diğer'))+'</span><a href="#" class="ek-link" data-urs-act="rkDosyaAc" data-yol="'+esc(x.yol)+'" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.ad)+'</a><button type="button" class="x" data-urs-act="rkDosyaSil" title="Kaldır">&times;</button></div>'; }
+async function rkDosyaYukle(urunId){
+  var input=document.getElementById('rkDosyaInput'), msj=document.getElementById('rkDosyaMsj'), files=input.files, tur=val('rkDosyaTur')||'Diğer';
+  if(!files||!files.length){ msj.textContent=t('Önce dosya seçin.'); return; }
+  msj.textContent=t('Yükleniyor…');
+  try{
+    for(var i=0;i<files.length;i++){
+      var f=files[i]; if(f.size>15*1024*1024) throw new Error(t('Dosya 15 MB’tan büyük olamaz.'));
+      var yol=cloudTenantId+'/recete/'+urunId+'/'+Date.now()+'-'+i+'-'+f.name.replace(/[^a-zA-Z0-9.\-_]/g,'_');
+      var up=await sb.storage.from('urun-belgeler').upload(yol, f); if(up.error) throw up.error;
+      var k={yol:yol, ad:f.name, tur:tur}; RK_DOSYALAR.push(k);
+      document.getElementById('rkDosyaWrap').insertAdjacentHTML('beforeend', rkDosyaSatiri(k));
+    }
+    msj.textContent=t('Yüklendi — kaydetmeyi unutmayın.');
+  }catch(x){ msj.textContent=t('Yükleme başarısız')+': '+ursHata(x); }
+  input.value='';
+}
+async function rkDosyaAc(yol){ try{ var s=await sb.storage.from('urun-belgeler').createSignedUrl(yol,300); if(s.data) window.open(s.data.signedUrl,'_blank'); }catch(e){ alert(t('Dosya açılamadı.')); } }
 function openReceteKalemForm(urunId, kalemId){
   var k = kalemId ? state.receteler.find(function(x){return x.id===kalemId;}) : null;
+  RK_DOSYALAR = k && k.dosyalar ? k.dosyalar.slice() : [];
   var alerjenChecks = TGK_ALERJENLER.map(function(a){
     var checked = k && (k.alerjenler||[]).indexOf(a)>-1;
     return '<label class="chk-row"><input type="checkbox" value="'+esc(a)+'" '+(checked?'checked':'')+' class="recAlerjenChk"> '+esc(a)+'</label>';
@@ -1069,7 +1089,10 @@ function openReceteKalemForm(urunId, kalemId){
     +'<div><label>Alt Bileşenler <span class="muted">(bileşik hammadde ise — ör. Çikolata: şeker, kakao kitlesi, kakao yağı… ve hammadde içindeki oranları)</span></label>'
     +'<div id="altBilesenWrap">'+((k&&k.alt_bilesenler)||[]).map(altBilesenSatiri).join('')+'</div>'
     +'<button type="button" class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="altBilesenEkle">+ Alt Bileşen Ekle</button></div>'
-    +'<div><label>Tedarikçi (opsiyonel — bilgi amaçlı, portal/giriş yok)</label><input id="rkTedarikci" value="'+esc(k?k.tedarikci_adi:'')+'"></div>'
+    +'<div class="grid2"><div><label>Tedarikçi (opsiyonel — bilgi amaçlı, portal/giriş yok)</label><input id="rkTedarikci" value="'+esc(k?k.tedarikci_adi:'')+'"></div>'
+    +'<div><label>'+t('Raf Ömrü')+' <span class="muted">('+t('hammaddenin kendi raf ömrü')+')</span></label><input id="rkRaf" value="'+esc(k&&k.raf_omru?k.raf_omru:'')+'" placeholder="ör. Üretimden itibaren 18 ay"></div></div>'
+    +'<div><label>'+t('Belgeler')+' <span class="muted">('+t('teknik föy, MSDS, sertifika — PDF/Word/Excel/görsel')+')</span></label><div id="rkDosyaWrap">'+RK_DOSYALAR.map(rkDosyaSatiri).join('')+'</div>'
+    +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="rkDosyaTur" style="max-width:150px">'+['Teknik Föy','MSDS','Sertifika','Diğer'].map(function(x){return '<option value="'+x+'">'+esc(t(x))+'</option>';}).join('')+'</select><input type="file" id="rkDosyaInput" multiple><button type="button" class="btn btn-line btn-sm" data-urs-act="rkDosyaYukle" data-urunid="'+urunId+'">'+t('Yükle')+'</button><span id="rkDosyaMsj" class="muted" style="font-size:12px"></span></div></div>'
     +'<div><label>Proses Talimatı <span class="muted">(hangi aşamada, hangi koşullarda eklenir; sıvı/katı çözünme, karıştırma süresi vb.)</span></label><textarea id="rkProses" rows="3" placeholder="ör. Karıştırma tankına 40°C su ile birlikte eklenir, tozun tamamı çözününceye kadar 10 dk karıştırılır.">'+esc(k?k.proses_talimati:'')+'</textarea></div>'
     +'<div><label>Not (opsiyonel)</label><input id="rkNot" value="'+esc(k?k.notlar:'')+'"></div>'
     +'<div><label>İçerdiği Alerjenler (varsa)</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">'+alerjenChecks+'</div></div>'
@@ -1082,7 +1105,7 @@ async function receteKalemKaydet(urunId, kalemId){
   if(!ad){ e.textContent='Hammadde adı zorunludur.'; kilitAc(); return; }
   var alerjenler = Array.prototype.map.call(document.querySelectorAll('.recAlerjenChk:checked'), function(c){return c.value;});
   var mevcut = receteOf(urunId);
-  var rec = { urun_id:urunId, hammadde_adi:ad, oran_yuzde:numOrNull('rkOran'), tedarikci_adi:val('rkTedarikci').trim(), proses_talimati:val('rkProses').trim(), notlar:val('rkNot').trim(), alerjenler:alerjenler,
+  var rec = { urun_id:urunId, hammadde_adi:ad, oran_yuzde:numOrNull('rkOran'), tedarikci_adi:val('rkTedarikci').trim(), proses_talimati:val('rkProses').trim(), notlar:val('rkNot').trim(), alerjenler:alerjenler, raf_omru:val('rkRaf').trim(), dosyalar:RK_DOSYALAR,
     alt_bilesenler: Array.prototype.map.call(document.querySelectorAll('.altBilesenRow'), function(row){ var o=row.querySelector('.abOran').value.trim(); return { ad: row.querySelector('.abAd').value.trim(), oran: o?Number(o):null }; }).filter(function(x){return x.ad;}) };
   try{
     var r = kalemId ? await sb.from('urun_receteler').update(rec).eq('id',kalemId)
@@ -2118,7 +2141,7 @@ function renderAyarlar(){
     +'<div><label>İşletme Onay No</label><input id="fbOnayNo" value="'+esc(fb.isletme_onay_no||'')+'" placeholder="ör. TR-34-A-000123" '+(ce?'':'disabled')+'></div></div>'
     +'<div class="sec-h">Yıllık Gözden Geçirme Bildirimi</div>'
     +'<div class="grid2"><div><label>Üst Yönetici Adı</label><input id="fbUstAd" value="'+esc(fb.ust_yonetici_ad||'')+'" '+(ce?'':'disabled')+'></div>'
-    +'<div><label>Üst Yönetici E-postası</label><input id="fbUstEposta" value="'+esc(fb.ust_yonetici_eposta||'')+'" placeholder="onaylar süresi geldiğinde bilgilendirilir" '+(ce?'':'disabled')+'></div></div>'
+    +'<div><label>Üst Yönetici E-postası</label><input id="fbUstEposta" value="'+esc(fb.ust_yonetici_eposta||'')+'" placeholder="ornek@firma.com" '+(ce?'':'disabled')+'><div class="muted" style="font-size:11.5px;margin-top:3px">'+t('Onaylı spesifikasyonların yıllık gözden geçirmesine 30, 7 ve 0 gün kala (vadesi geçmişse her pazartesi) bu adrese otomatik özet e-posta gider. Boş bırakılırsa gönderilmez.')+'</div></div></div>'
     +'<div class="login-err" id="fbHata"></div>'
     +(ce?'<button class="btn btn-leaf" style="justify-self:start" data-urs-act="firmaKaydet">Kaydet</button>':'')
     +'</div></div></div></div>'
@@ -2299,6 +2322,9 @@ var URS_ACTIONS = {
   firmaLogoYukle: function(){ firmaLogoYukle(); },
   firmaKaydet: function(){ firmaKaydet(); },
   argeProjeForm: function(){ openArgeProjeForm(); },
+  rkDosyaYukle: function(el){ rkDosyaYukle(el.dataset.urunid); },
+  rkDosyaAc: function(el){ rkDosyaAc(el.dataset.yol); },
+  rkDosyaSil: function(el){ var row=el.closest('.rkDosyaRow'); RK_DOSYALAR=RK_DOSYALAR.filter(function(x){return x.yol!==row.dataset.yol;}); row.remove(); },
   argeProjeKaydet: function(el){ argeProjeKaydet(el.dataset.id||''); },
   argeProjeAc: function(el){ ARGE_SEKME='zaman'; openArgeProje(el.dataset.id); },
   argeProjeDuzenle: function(el){ openArgeProjeForm(el.dataset.id); },
