@@ -1,6 +1,16 @@
 /* qdl-en.js — Reçete ve Spesifikasyon (URS): EN modunda Türkçe kalan arayüz metinleri (qdl-ceviri.js). 25.09.2026 */
 window.QDL_EN = {
   /* 25.09.2026 Ar-Ge projeleri */
+  "Numune": "Sample",
+  "₺/kg (ops.)": "₺/kg (opt.)",
+  "Birim fiyat — maliyet hesabı için": "Unit price — for cost calculation",
+  "Hammadde maliyeti": "Ingredient cost",
+  "Maliyet": "Cost",
+  "Müşteri geri bildirimi": "Customer feedback",
+  "Onaylandı": "Approved",
+  "Reddedildi": "Rejected",
+  "Geri bildirim bekleniyor": "Awaiting feedback",
+  "Müşteri adı — ör. ABC Market zinciri": "Customer name — e.g. ABC supermarket chain",
   "+ Test / Not Ekle": "+ Add Test / Note",
   "+ Yeni Deneme": "+ New Trial",
   "+ Hammadde Ekle": "+ Add Ingredient",

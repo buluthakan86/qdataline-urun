@@ -1108,7 +1108,10 @@ async function receteKalemSil(kalemId, urunId){
 // ---------------------------------------------------------------------------
 var ARGE_ASAMALAR = ['Fikir','Formülasyon','Deneme Üretimi','Duyusal/Lab','Raf Ömrü','Onay','Ürüne Dönüştürüldü','İptal'];
 var ARGE_DENEME_DURUM = ['Planlandı','Yapıldı','Başarılı','Başarısız'];
-var ARGE_OLAY_TUR = ['Not','Duyusal','Lab','Raf Ömrü','Karar'];
+var ARGE_OLAY_TUR = ['Not','Duyusal','Lab','Raf Ömrü','Numune','Karar'];
+/* maliyet: reçete satırında birim fiyat (₺/kg) → 1 kg ürün hammadde maliyeti */
+function argeMaliyet(r){ var var_=false, m=(r||[]).reduce(function(s,k){ if(k.birim_fiyat!=null&&k.birim_fiyat!==''){ var_=true; return s+(Number(k.oran_yuzde)||0)/100*Number(k.birim_fiyat); } return s; },0); return var_?m:null; }
+function argeTL(n){ return n==null?'—':(Number(n).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺/kg'); }
 var ARGE_PUAN_ALAN = [['tat','Tat'],['koku','Koku'],['doku','Doku'],['gorunum','Görünüm']];
 var ARGE_DOSYALAR = [];
 function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1198,9 +1201,10 @@ function argeSekmeZaman(p, dn){
     var ek = '';
     if(o.tur==='Duyusal'){ var ort=argeOrtPuan(o); ek = ARGE_PUAN_ALAN.map(function(a){ return t(a[1])+': '+((o.puanlar||{})[a[0]]||'—'); }).join(' · ')+(ort!=null?' · <b>'+t('Ort.')+' '+fmt(ort)+'/9</b>':''); }
     if(o.tur==='Raf Ömrü' && o.raf_gun!=null) ek = t('Gün')+' '+o.raf_gun;
-    if(o.uygun===true) ek += ' <span class="pill ok">'+t('Uygun')+'</span>'; else if(o.uygun===false) ek += ' <span class="pill crit">'+t('Uygun değil')+'</span>';
+    var _n=o.tur==='Numune';
+    if(o.uygun===true) ek += ' <span class="pill ok">'+t(_n?'Onaylandı':'Uygun')+'</span>'; else if(o.uygun===false) ek += ' <span class="pill crit">'+t(_n?'Reddedildi':'Uygun değil')+'</span>'; else if(_n) ek += ' <span class="pill warn">'+t('Geri bildirim bekleniyor')+'</span>';
     var d = o.deneme_id ? dn.find(function(x){return x.id===o.deneme_id;}) : null;
-    return { tarih:o.tarih, sira:o.created_at, ikon:{'Not':'📝','Duyusal':'👅','Lab':'🧪','Raf Ömrü':'⏳','Karar':'✅','Aşama':'➡️'}[o.tur]||'•', baslik:t(o.tur)+(d?' · '+t('Deneme')+' #'+d.deneme_no:'')+(o.baslik?' — '+esc(o.baslik):''), detay:esc(o.detay||''), ek:ek };
+    return { tarih:o.tarih, sira:o.created_at, ikon:{'Not':'📝','Duyusal':'👅','Lab':'🧪','Raf Ömrü':'⏳','Numune':'📦','Karar':'✅','Aşama':'➡️'}[o.tur]||'•', baslik:t(o.tur)+(d?' · '+t('Deneme')+' #'+d.deneme_no:'')+(o.baslik?' — '+esc(o.baslik):''), detay:esc(o.detay||''), ek:ek };
   }).concat(dn.map(function(d){
     return { tarih:d.tarih||String(d.created_at).slice(0,10), sira:d.created_at, ikon:'⚗️', baslik:t('Deneme')+' #'+d.deneme_no+' '+argeDurumPill(d.durum)+(d.id===p.kazanan_deneme_id?' ⭐':''), detay:esc(d.sonuc||''), ek:(d.recete||[]).length+' '+t('hammadde') };
   })).sort(function(a,b){ return String(b.tarih).localeCompare(String(a.tarih)) || String(b.sira).localeCompare(String(a.sira)); });
@@ -1217,12 +1221,13 @@ function argeSekmeDenemeler(p, dn, ce){
     var r = d.recete||[];
     return '<tr><td><b>#'+d.deneme_no+'</b>'+(d.id===p.kazanan_deneme_id?' ⭐':'')+'</td><td>'+argeTarih(d.tarih)+'</td><td>'+argeDurumPill(d.durum)+'</td>'
       +'<td style="font-size:12px">'+r.slice(0,4).map(function(k){return esc(k.hammadde_adi)+(k.oran_yuzde!=null?' '+fmt(k.oran_yuzde)+'%':'');}).join(', ')+(r.length>4?' …':'')+'</td>'
+      +'<td style="white-space:nowrap">'+argeTL(argeMaliyet(r))+'</td>'
       +'<td style="font-size:12px">'+esc((d.sonuc||'').slice(0,80))+'</td>'
       +'<td style="white-space:nowrap">'+(d.deneme_no>1?'<button class="btn btn-line btn-sm" data-urs-act="argeKarsilastir" data-id="'+d.id+'" title="'+t('Bir öncekiyle karşılaştır')+'">⇄</button> ':'')
       +(ce?'<button class="btn btn-line btn-sm" data-urs-act="argeDenemeForm" data-proje="'+p.id+'" data-id="'+d.id+'">✏️</button> <button class="btn btn-line btn-sm" data-urs-act="argeKazanan" data-proje="'+p.id+'" data-id="'+d.id+'" title="'+t('Kazanan olarak işaretle')+'">⭐</button>':'')+'</td></tr>';
   }).join('');
   return (ce?'<button class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="argeDenemeForm" data-proje="'+p.id+'">+ '+t('Yeni Deneme')+'</button>':'')
-    +'<div class="tbl-wrap" style="overflow-x:auto">'+(rows?'<table><thead><tr><th>#</th><th>Tarih</th><th>Durum</th><th>Reçete</th><th>Sonuç</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="empty">'+t('Henüz deneme yok. Yeni deneme eklerken önceki denemenin reçetesi otomatik kopyalanır.')+'</div>')+'</div>';
+    +'<div class="tbl-wrap" style="overflow-x:auto">'+(rows?'<table><thead><tr><th>#</th><th>Tarih</th><th>Durum</th><th>Reçete</th><th>Maliyet</th><th>Sonuç</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="empty">'+t('Henüz deneme yok. Yeni deneme eklerken önceki denemenin reçetesi otomatik kopyalanır.')+'</div>')+'</div>';
 }
 function argeSekmeTestler(p, ce){
   var dn = argeDenemeleri(p.id);
@@ -1242,7 +1247,7 @@ function argeSekmeKarar(p, dn, ce){
     +'<div><label>'+t('Aşama değişikliği notu (ops.)')+'</label><input id="akNot"'+(ce?'':' disabled')+'></div></div>'
     +(ce?'<button class="btn btn-line btn-sm" style="justify-self:start" data-urs-act="argeAsamaKaydet" data-id="'+p.id+'">'+t('Aşamayı Kaydet')+'</button>':'');
   h += '<div class="panel" style="margin-top:6px"><div class="pb">'
-    +(kz?'<div><b>⭐ '+t('Kazanan deneme')+': #'+kz.deneme_no+'</b> '+argeDurumPill(kz.durum)+'</div><div class="muted" style="font-size:12px;margin:4px 0">'+(kz.recete||[]).map(function(k){return esc(k.hammadde_adi)+(k.oran_yuzde!=null?' '+fmt(k.oran_yuzde)+'%':'');}).join(', ')+'</div>'
+    +(kz?'<div><b>⭐ '+t('Kazanan deneme')+': #'+kz.deneme_no+'</b> '+argeDurumPill(kz.durum)+'</div><div class="muted" style="font-size:12px;margin:4px 0">'+(kz.recete||[]).map(function(k){return esc(k.hammadde_adi)+(k.oran_yuzde!=null?' '+fmt(k.oran_yuzde)+'%':'');}).join(', ')+'</div>'+(argeMaliyet(kz.recete)!=null?'<div style="font-size:12.5px">'+t('Hammadde maliyeti')+': <b>'+argeTL(argeMaliyet(kz.recete))+'</b></div>':'')
        :'<div class="muted">'+t('Henüz kazanan deneme seçilmedi. "Denemeler" sekmesinde ⭐ ile işaretleyin.')+'</div>')
     +(p.donusen_urun_id?'<div style="margin-top:8px"><span class="pill ok">'+t('Ürüne dönüştürüldü')+'</span> <a href="#" class="ek-link" data-urs-act="argeUruneGit" data-id="'+p.donusen_urun_id+'">'+esc(urunAdi(p.donusen_urun_id))+' →</a></div>'
        :(ce&&kz?'<button class="btn btn-leaf" style="margin-top:8px" data-urs-act="argeUruneDonustur" data-id="'+p.id+'">'+t('Ürüne Dönüştür')+' →</button><div class="fld-hint muted" style="font-size:11.5px;margin-top:4px">'+t('Kazanan denemenin reçetesiyle yeni ürün ve reçete oluşturulur; spesifikasyonu ürün kartından başlatabilirsiniz.')+'</div>':''))
@@ -1251,7 +1256,7 @@ function argeSekmeKarar(p, dn, ce){
 }
 
 function argeRcSatiri(k){ k=k||{};
-  return '<div class="argeRcRow" style="display:grid;grid-template-columns:1fr 110px 1fr auto;gap:6px;margin-bottom:4px"><input class="arAd" placeholder="'+t('Hammadde')+'" value="'+esc(k.hammadde_adi||'')+'"><input class="arOran" type="number" step="0.01" min="0" max="100" placeholder="%" value="'+(k.oran_yuzde!=null?k.oran_yuzde:'')+'"><input class="arAlerjen" placeholder="'+t('Alerjenler (virgülle)')+'" value="'+esc((k.alerjenler||[]).join(', '))+'"><button type="button" class="x" data-urs-act="removeRow" data-row-class="argeRcRow" title="Kaldır">&times;</button></div>'; }
+  return '<div class="argeRcRow" style="display:grid;grid-template-columns:1fr 90px 110px 1fr auto;gap:6px;margin-bottom:4px"><input class="arAd" placeholder="'+t('Hammadde')+'" value="'+esc(k.hammadde_adi||'')+'"><input class="arOran" type="number" step="0.01" min="0" max="100" placeholder="%" value="'+(k.oran_yuzde!=null?k.oran_yuzde:'')+'"><input class="arFiyat" type="number" step="0.01" min="0" placeholder="'+t('₺/kg (ops.)')+'" title="'+t('Birim fiyat — maliyet hesabı için')+'" value="'+(k.birim_fiyat!=null?k.birim_fiyat:'')+'"><input class="arAlerjen" placeholder="'+t('Alerjenler (virgülle)')+'" value="'+esc((k.alerjenler||[]).join(', '))+'"><button type="button" class="x" data-urs-act="removeRow" data-row-class="argeRcRow" title="Kaldır">&times;</button></div>'; }
 function argeDosyaSatiri(d){ return '<div class="argeDosyaRow" data-yol="'+esc(d.yol)+'" style="display:flex;gap:8px;align-items:center;padding:4px 0"><span>📎</span><a href="#" class="ek-link" data-urs-act="argeDosyaAc" data-yol="'+esc(d.yol)+'" style="flex:1">'+esc(d.ad)+'</a><button type="button" class="x" data-urs-act="argeDosyaSil" title="Kaldır">&times;</button></div>'; }
 function openArgeDenemeForm(projeId, denemeId){
   var dn = argeDenemeleri(projeId), d = denemeId ? dn.find(function(x){return x.id===denemeId;}) : null;
@@ -1279,14 +1284,15 @@ function openArgeDenemeForm(projeId, denemeId){
 }
 function argeReceteOku(){
   return Array.prototype.map.call(document.querySelectorAll('.argeRcRow'), function(row){
-    var o=row.querySelector('.arOran').value.trim();
-    return { hammadde_adi:row.querySelector('.arAd').value.trim(), oran_yuzde:o===''?null:Number(o), alerjenler:row.querySelector('.arAlerjen').value.split(',').map(function(x){return x.trim();}).filter(Boolean) };
+    var o=row.querySelector('.arOran').value.trim(), f=row.querySelector('.arFiyat').value.trim();
+    return { hammadde_adi:row.querySelector('.arAd').value.trim(), oran_yuzde:o===''?null:Number(o), birim_fiyat:f===''?null:Number(f), alerjenler:row.querySelector('.arAlerjen').value.split(',').map(function(x){return x.trim();}).filter(Boolean) };
   }).filter(function(k){return k.hammadde_adi;});
 }
 function argeToplamGuncelle(){
   var el=document.getElementById('adToplam'); if(!el) return;
   var top=argeReceteOku().reduce(function(s,k){return s+(Number(k.oran_yuzde)||0);},0);
-  el.textContent = top ? t('Toplam')+': '+fmt(top)+'%'+(Math.abs(top-100)>0.5?' ⚠':' ✓') : '';
+  var m=argeMaliyet(argeReceteOku());
+  el.textContent = (top ? t('Toplam')+': '+fmt(top)+'%'+(Math.abs(top-100)>0.5?' ⚠':' ✓') : '')+(m!=null?' · '+t('Hammadde maliyeti')+': '+argeTL(m):'');
 }
 async function argeDenemeKaydet(projeId, id, no){
   if(kilitliMi()) return;
@@ -1336,6 +1342,7 @@ function argeKarsilastir(id){
     return '<tr'+((o==null||y==null||Math.abs(fark)>0.001)?' style="background:rgba(250,204,21,.07)"':'')+'><td>'+esc(a)+'</td><td>'+(o!=null?fmt(o)+'%':'—')+'</td><td>'+(y!=null?fmt(y)+'%':'—')+'</td><td>'+etiket+'</td></tr>'; }).join('');
   openModal('<div class="mh"><b>'+t('Karşılaştırma')+': #'+onceki.deneme_no+' → #'+d.deneme_no+'</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb"><div class="tbl-wrap"><table><thead><tr><th>Hammadde</th><th>#'+onceki.deneme_no+'</th><th>#'+d.deneme_no+'</th><th>'+t('Fark')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +((argeMaliyet(onceki.recete)!=null||argeMaliyet(d.recete)!=null)?'<div style="font-size:12.5px"><b>'+t('Hammadde maliyeti')+':</b> '+argeTL(argeMaliyet(onceki.recete))+' → '+argeTL(argeMaliyet(d.recete))+'</div>':'')
     +(onceki.parametreler!==d.parametreler?'<div class="muted" style="font-size:12px"><b>'+t('Parametreler')+':</b> '+esc(onceki.parametreler||'—')+' → '+esc(d.parametreler||'—')+'</div>':'')
     +'</div><div class="mf"><button class="btn btn-line" data-urs-act="argeGeri" data-id="'+d.proje_id+'">← '+t('Projeye dön')+'</button></div>', true);
 }
@@ -1355,10 +1362,11 @@ function openArgeOlayForm(projeId, id, tur){
     +'<div class="grid2"><div><label>'+t('Tür')+'</label><select id="aoTur"'+(o?' disabled':'')+'>'+ARGE_OLAY_TUR.map(function(x){return '<option value="'+x+'"'+(x===tur?' selected':'')+'>'+esc(t(x))+'</option>';}).join('')+'</select></div>'
     +'<div><label>Tarih</label><input id="aoTarih" type="date" value="'+(o?o.tarih:todayISO())+'"></div></div>'
     +'<div class="grid2"><div><label>'+t('Deneme')+'</label><select id="aoDeneme"><option value="">—</option>'+dn.map(function(d){return '<option value="'+d.id+'"'+(o&&o.deneme_id===d.id?' selected':'')+'>#'+d.deneme_no+'</option>';}).join('')+'</select></div>'
-    +'<div><label>'+t('Başlık')+'</label><input id="aoBaslik" value="'+esc(o?o.baslik:'')+'" placeholder="'+esc(t(tur==='Lab'?'ör. Nem ve kül analizi':(tur==='Raf Ömrü'?'ör. 30. gün kontrolü':(tur==='Duyusal'?'ör. 6 kişilik panel':'ör. Tedarikçiden numune istendi'))))+'"></div></div>'
+    +'<div><label>'+t('Başlık')+'</label><input id="aoBaslik" value="'+esc(o?o.baslik:'')+'" placeholder="'+esc(t(tur==='Numune'?'Müşteri adı — ör. ABC Market zinciri':tur==='Lab'?'ör. Nem ve kül analizi':(tur==='Raf Ömrü'?'ör. 30. gün kontrolü':(tur==='Duyusal'?'ör. 6 kişilik panel':'ör. Tedarikçiden numune istendi'))))+'"></div></div>'
     +(tur==='Duyusal'?'<div><label>'+t('Puanlar (1–9)')+'</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'+ARGE_PUAN_ALAN.map(function(a){return '<div><span class="muted" style="font-size:11.5px">'+t(a[1])+'</span><input class="aoPuan" data-k="'+a[0]+'" type="number" min="1" max="9" step="0.1" value="'+(pu[a[0]]!=null?pu[a[0]]:'')+'"></div>';}).join('')+'</div></div>':'')
     +(tur==='Raf Ömrü'?'<div class="grid2"><div><label>'+t('Kontrol günü')+'</label><input id="aoGun" type="number" min="0" value="'+(o&&o.raf_gun!=null?o.raf_gun:'')+'" placeholder="0 / 30 / 60 / 90…"></div>'+uygunSel+'</div>':'')
     +(tur==='Lab'?uygunSel:'')
+    +(tur==='Numune'?uygunSel.replace('>'+t('Sonuç')+'<','>'+t('Müşteri geri bildirimi')+'<').replace('>'+t('Uygun')+'<','>'+t('Onaylandı')+'<').replace('>'+t('Uygun değil')+'<','>'+t('Reddedildi')+'<'):'')
     +'<div><label>'+t('Detay / Sonuçlar')+'</label><textarea id="aoDetay" rows="3">'+esc(o?o.detay:'')+'</textarea></div>'
     +'<div class="login-err" id="aoHata"></div>'
     +'</div><div class="mf"><button class="btn btn-line" data-urs-act="argeGeri" data-id="'+projeId+'">'+t('Vazgeç')+'</button><button class="btn btn-leaf" data-urs-act="argeOlayKaydet" data-proje="'+projeId+'" data-id="'+(id||'')+'" data-tur="'+tur+'">Kaydet</button></div>');
