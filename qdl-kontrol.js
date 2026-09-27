@@ -81,7 +81,8 @@
   function cikisKabi() {
     var bs = document.querySelectorAll('aside button, aside a, nav button');
     for (var i = 0; i < bs.length; i++) {
-      if (/Çıkış|Log ?out|Sign ?out/i.test(bs[i].textContent || '') && bs[i].offsetParent) return bs[i].parentNode;
+      // Yalnız sol menüdeki (ekranın sol kenarındaki) Çıkış düğmesi; içerikteki başka "Çıkış" düğmeleri sayılmaz.
+      if (/Çıkış|Log ?out|Sign ?out/i.test(bs[i].textContent || '') && bs[i].offsetParent && bs[i].getBoundingClientRect().left < 200) return bs[i].parentNode;
     }
     return null;
   }
@@ -108,11 +109,11 @@
         dilGrup.appendChild(b);
       });
     }
-    if (!dilGrup.isConnected) {
+    if (cfg.langYer) {
+      // Hedef yer belirtilmişse yalnız oraya konur (sayfa hazır olmadan yedek konuma düşmesin); hazır olunca taşınır.
       var yer = cfg.langYer === 'cikis' ? cikisKabi() : q(cfg.langYer);
-      if (yer) yer.insertBefore(dilGrup, yer.firstChild);
-      else if (o.parentNode) o.parentNode.insertBefore(dilGrup, o);
-    }
+      if (yer && dilGrup.parentNode !== yer) yer.insertBefore(dilGrup, yer.firstChild);
+    } else if (!dilGrup.isConnected && o.parentNode) o.parentNode.insertBefore(dilGrup, o);
   }
 
   function temaKur() {
@@ -128,13 +129,13 @@
         setTimeout(guncelle, 60);
       });
     }
-    if (!temaBtn.isConnected) {
+    if (cfg.temaYer) {
       var yer = q(cfg.temaYer);
-      if (yer) {
+      if (yer && temaBtn.parentNode !== yer) {
         var once = cfg.temaOnce ? yer.querySelector(cfg.temaOnce) : null;
         yer.insertBefore(temaBtn, once && once.parentNode === yer ? once : null);
-      } else if (o.parentNode) o.parentNode.insertBefore(temaBtn, o);
-    }
+      }
+    } else if (!temaBtn.isConnected && o.parentNode) o.parentNode.insertBefore(temaBtn, o);
   }
 
   function guncelle() {
