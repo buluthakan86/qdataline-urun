@@ -10,6 +10,8 @@
  *   data-theme     modülün kendi tema düğmesi
  *   data-tema-yer  tema düğmesinin ekleneceği kap (sonuna; varsa data-tema-once öğesinin önüne). Yoksa orijinalin yerine.
  *   data-tema-once kap içinde önüne eklenecek öğe (ör. "#btnAdd")
+ *   data-tema-anahtar  modülün kendi tema düğmesi YOKSA: temayı bu betik yönetir (html[data-theme] + localStorage
+ *                      anahtarı). Titreme olmasın diye bu durumda etiket <head> içine konur. (27.09: BOY, İSG)
  */
 (function () {
   'use strict';
@@ -20,8 +22,17 @@
     langYer: me.getAttribute('data-lang-yer'),
     theme: me.getAttribute('data-theme'),
     temaYer: me.getAttribute('data-tema-yer'),
-    temaOnce: me.getAttribute('data-tema-once')
+    temaOnce: me.getAttribute('data-tema-once'),
+    temaAnahtar: me.getAttribute('data-tema-anahtar')
   };
+
+  // Kendi tema düğmesi olmayan modül: kayıtlı temayı HEMEN uygula (sayfa boyanmadan).
+  function temaOku() { try { return localStorage.getItem(cfg.temaAnahtar) === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; } }
+  function temaUygula(t) {
+    if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  if (cfg.temaAnahtar) temaUygula(temaOku());
 
   var css = [
     '.qdlk-lang{display:flex;flex-wrap:wrap;gap:4px;width:100%;margin:0 0 8px}',
@@ -137,14 +148,19 @@
   }
 
   function temaKur() {
-    var o = q(cfg.theme);
-    if (!o) return;
+    var o = cfg.temaAnahtar ? null : q(cfg.theme);
+    if (!o && !cfg.temaAnahtar) return;
     if (!temaBtn) {
       temaBtn = document.createElement('button');
       temaBtn.type = 'button';
       temaBtn.className = 'qdlk-tema';
       temaBtn.addEventListener('click', function () {
-        var org = q(cfg.theme);
+        if (cfg.temaAnahtar) {
+          var yeni = temaOku() === 'light' ? 'dark' : 'light';
+          try { localStorage.setItem(cfg.temaAnahtar, yeni); } catch (e) { /* yoksay */ }
+          temaUygula(yeni);
+        }
+        var org = cfg.temaAnahtar ? null : q(cfg.theme);
         if (org) org.click();
         setTimeout(guncelle, 60);
       });
@@ -155,7 +171,7 @@
         var once = cfg.temaOnce ? yer.querySelector(cfg.temaOnce) : null;
         yer.insertBefore(temaBtn, once && once.parentNode === yer ? once : null);
       }
-    } else if (!temaBtn.isConnected && o.parentNode) o.parentNode.insertBefore(temaBtn, o);
+    } else if (!temaBtn.isConnected && o && o.parentNode) o.parentNode.insertBefore(temaBtn, o);
   }
 
   function guncelle() {
