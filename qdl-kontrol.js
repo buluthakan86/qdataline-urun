@@ -27,15 +27,26 @@
     '.qdlk-lang{display:flex;flex-wrap:wrap;gap:4px;width:100%;margin:0 0 8px}',
     '.qdlk-lang button{flex:1 1 40px;font:inherit;font-size:11px;padding:5px 0;border-radius:6px;cursor:pointer;',
     'border:1px solid rgba(140,160,150,.35);background:transparent;color:inherit;font-weight:500;line-height:1.2}',
-    '.qdlk-lang button[aria-pressed="true"]{background:linear-gradient(135deg,#10B981,#0E9F6E);border-color:transparent;color:#06140E;font-weight:800}',
+    '.qdlk-lang button[aria-pressed="true"]{background:var(--qdlk-vurgu);border-color:transparent;color:var(--qdlk-vurgu-yazi);font-weight:800}',
     '.qdlk-tema{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;',
     'border-radius:8px;cursor:pointer;font:inherit;font-size:15px;line-height:1;padding:0;margin:0 4px;',
     'border:1px solid rgba(140,160,150,.35);background:transparent;color:inherit;transition:.13s}',
-    '.qdlk-tema:hover{border-color:#10B981;color:#10B981}'
+    '.qdlk-tema:hover{border-color:var(--qdlk-vurgu);color:var(--qdlk-vurgu)}'
   ];
   // Gizleme kuralı yeni düğmeleri (.qdlk-*) asla kapsamaz (seçici "tema" gibi ortak bir başlıkla eşleşebilir).
   if (cfg.lang) css.push(':is(' + cfg.lang + '):not(.qdlk-tema):not(.qdlk-lang *){display:none!important}');
   if (cfg.theme) css.push(':is(' + cfg.theme + '):not(.qdlk-tema):not(.qdlk-lang *){display:none!important}');
+  // Seçili dil rengi = modülün kendi vurgu rengi (--leaf; Q-Kalite'de de modül rengi). Yazı rengi zeminin açıklığına göre.
+  function vurguAyarla() {
+    var v = (getComputedStyle(document.documentElement).getPropertyValue('--leaf') || '').trim() || '#10B981';
+    var m = v.match(/^#([0-9a-f]{6})$/i), yazi = '#fff';
+    if (m) {
+      var n = parseInt(m[1], 16), l = (0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+      if (l > 0.55) yazi = '#1a1405';
+    }
+    document.documentElement.style.setProperty('--qdlk-vurgu', v);
+    document.documentElement.style.setProperty('--qdlk-vurgu-yazi', yazi);
+  }
   var st = document.createElement('style');
   st.textContent = css.join('');
   (document.head || document.documentElement).appendChild(st);
@@ -166,11 +177,13 @@
   var bekleyen = false;
   function tur() {
     bekleyen = false;
+    vurguAyarla(); // açık/koyu temada --leaf değişebilir
     dilKur(); temaKur(); guncelle();
   }
   function planla() { if (!bekleyen) { bekleyen = true; requestAnimationFrame(tur); } }
 
   function basla() {
+    vurguAyarla();
     tur();
     new MutationObserver(planla).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'data-theme', 'lang'] });
     new MutationObserver(planla).observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'lang'] });
