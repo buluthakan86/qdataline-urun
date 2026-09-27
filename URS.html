@@ -49,6 +49,13 @@ html[data-theme="light"]{
   --ink:#1B2410; --muted:#66783F; --ink-on-accent:#1A2E05;
   --bar-track:#E9F1D4; --sb-thumb:#CFE0A6; --sb-thumb-h:#B9D183;
 }
+/* 27.09.2026 açık temada sol menü + durum renkleri okunurluğu (yazılar sabit açık renkteydi) */
+html[data-theme="light"]{--ok:#047857; --warn:#B45309; --crit:#DC2626; --blue:#1D4ED8; --purple:#6D28D9; --miss:#56675E; --na:#56675E; --leaf-d:#4D7C0F; --lime:#4D7C0F;}
+html[data-theme="light"] .nav-item{color:#3A4150}
+html[data-theme="light"] .nav-item.on{color:var(--ink)}
+html[data-theme="light"] .nav-item .cnt{background:var(--mint); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line)}
+html[data-theme="light"] .nav-group-head{color:#5B6472}
+html[data-theme="light"] .nav-group-head:hover{color:var(--leaf)}
 *{box-sizing:border-box}
 body{margin:0; background:var(--sand); color:var(--ink); font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif; font-size:14px; line-height:1.45}
 h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif; letter-spacing:.2px; margin:0}
