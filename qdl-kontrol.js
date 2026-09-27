@@ -113,7 +113,16 @@
       // Hedef yer belirtilmişse yalnız oraya konur (sayfa hazır olmadan yedek konuma düşmesin); hazır olunca taşınır.
       var yer = cfg.langYer === 'cikis' ? cikisKabi() : q(cfg.langYer);
       if (yer && dilGrup.parentNode !== yer) yer.insertBefore(dilGrup, yer.firstChild);
-    } else if (!dilGrup.isConnected && o.parentNode) o.parentNode.insertBefore(dilGrup, o);
+    } else if (!dilGrup.isConnected && o.parentNode) {
+      // Orijinalin yerine konunca onun yatay kenar boşluklarını al (ör. Gıda'da düğme 14px içerideydi).
+      var cs = getComputedStyle(o), ml = cs.marginLeft, mr = cs.marginRight;
+      if (o.style.margin) dilGrup.style.margin = o.style.margin; // "auto 14px 14px" gibi (menü altına itme dahil)
+      if (ml !== '0px' || mr !== '0px') {
+        dilGrup.style.marginLeft = ml; dilGrup.style.marginRight = mr;
+        dilGrup.style.width = 'calc(100% - ' + ml + ' - ' + mr + ')';
+      }
+      o.parentNode.insertBefore(dilGrup, o);
+    }
   }
 
   function temaKur() {
