@@ -282,7 +282,11 @@ window.QDL_EN = {
   'Onaylı spesifikasyonlar': 'Approved specifications', 'Taslak spesifikasyonlar': 'Draft specifications', 'Alerjen içeren ürünler': 'Products with allergens',
   'Geçerli olmayan / süresi yaklaşan sertifikalar': 'Invalid / expiring certificates',
   'Ürün detayını aç': 'Open product details', 'Açıklama': 'Description', 'Girilmedi': 'Not entered', 'Sertifikalar': 'Certificates', '✏️ Düzenle': '✏️ Edit', 'Kapat': 'Close', 'Spesifikasyonu Aç →': 'Open Specification →',
-  'İşletme Kayıt No': 'Business Registration No', 'İşletme Onay No': 'Business Approval No', 'İşletme Kayıt / Onay No': 'Business Registration / Approval No', 'Önceki toplantıdan otomatik önerildi, değiştirebilirsiniz.': 'Suggested from the previous meeting; you can change it.'
+  'İşletme Kayıt No': 'Business Registration No', 'İşletme Onay No': 'Business Approval No', 'İşletme Kayıt / Onay No': 'Business Registration / Approval No', 'Önceki toplantıdan otomatik önerildi, değiştirebilirsiniz.': 'Suggested from the previous meeting; you can change it.',
+  "Listeden seçerseniz malzeme kartına bağlanır (izlenebilirlik için).": "Pick from the list to link to the material card (for traceability).",
+  "Malzeme kartına bağlı": "Linked to material card",
+  "Malzeme kartına bağlı değil": "Not linked to a material card",
+  "bağsız": "unlinked",
 };
 window.QDL_EN_RE = [
   [/^Sorumlu: (.+)$/, 'Owner: $1'],

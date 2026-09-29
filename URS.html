@@ -445,7 +445,7 @@ function toggleTheme(){
 // ---------------------------------------------------------------------------
 var LANG = (function(){ try{ return localStorage.getItem('urs_lang')==='en'?'en':'tr'; }catch(e){ return 'tr'; } })();
 try{ document.documentElement.lang = LANG; }catch(e){}
-function t(s){ if(LANG!=='en') return s; var v=I18N[s]; return v!==undefined?v:s; }
+function t(s){ if(LANG!=='en') return s; var v=I18N[s]; if(v!==undefined) return v; var e=window.QDL_EN; return (e&&Object.prototype.hasOwnProperty.call(e,s))?e[s]:s; }  /* 29.09: qdl-en.js yedeği */
 function toggleLang(){
   LANG = LANG==='en' ? 'tr' : 'en';
   try{ localStorage.setItem('urs_lang', LANG); }catch(e){}
@@ -714,6 +714,8 @@ async function loadAll(){
     tumSatirlar(function(){ return sb.from('urun_arge_denemeleri').select('*').is('deleted_at', null).order('deneme_no'); }),
     tumSatirlar(function(){ return sb.from('urun_arge_olaylar').select('*').is('deleted_at', null).order('tarih', {ascending:false}); })
   ]);
+  /* 29.09.2026 Faz 0.3: ortak malzeme listesi (Depo çekirdeği) — reçete hammaddesi öneri + bağ işareti. Yetki yoksa boş kalır. */
+  try{ var dm=await sb.from('dsy_item_version').select('item_id,ad,item_sinifi,temel_uom').is('yururluk_bitis',null).order('ad'); state.depoMalzemeler=dm.error?[]:(dm.data||[]); }catch(_){ state.depoMalzemeler=[]; }
   state.argeProjeler = _ap; state.argeDenemeler = _ad; state.argeOlaylar = _ao;
   state.urunler = ur; state.receteler = rc; state.specler = sp; state.versiyonlar = vr; state.sertifikalar = st;
   state.firmaBilgisi = fb.data || null;
@@ -1040,7 +1042,7 @@ function openReceteDetay(urunId){
   var rows = kalemler.map(function(r,i){
     return '<tr>'
       +'<td>'+(i+1)+'</td>'
-      +'<td>'+esc(r.hammadde_adi)+'</td>'
+      +'<td>'+esc(r.hammadde_adi)+(r.item_id?' <span class="pill ok" title="'+esc(t('Malzeme kartına bağlı'))+'" style="font-size:10px">✓</span>':((state.depoMalzemeler||[]).length?' <span class="pill" title="'+esc(t('Malzeme kartına bağlı değil'))+'" style="font-size:10px;opacity:.7">'+t('bağsız')+'</span>':''))+'</td>'
       +'<td>'+(r.oran_yuzde!=null?fmt(r.oran_yuzde)+'%':'—')+'</td>'
       +'<td class="muted">'+(r.oran_yuzde!=null?fmt(Number(r.oran_yuzde)*10)+' kg':'—')+'</td>'
       +'<td>'+(esc(r.tedarikci_adi)||'<span class="muted">—</span>')+'</td>'
@@ -1091,7 +1093,7 @@ function openReceteKalemForm(urunId, kalemId){
   }).join('');
   openModal('<div class="mh"><b>'+(k?'Hammaddeyi Düzenle':'Hammadde Ekle')+'</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
     +'<div class="mb">'
-    +'<div class="grid2"><div><label>Hammadde Adı *</label><input id="rkAd" value="'+esc(k?k.hammadde_adi:'')+'"></div>'
+    +'<div class="grid2"><div><label>Hammadde Adı *</label><input id="rkAd" list="rkDepoList" autocomplete="off" value="'+esc(k?k.hammadde_adi:'')+'"><datalist id="rkDepoList">'+(state.depoMalzemeler||[]).map(function(x){return '<option value="'+esc(x.ad)+'">';}).join('')+'</datalist><div class="muted" style="font-size:11.5px;margin-top:3px">'+t('Listeden seçerseniz malzeme kartına bağlanır (izlenebilirlik için).')+'</div></div>'
     +'<div><label>Oran (%)</label><input id="rkOran" type="number" step="0.01" min="0" max="100" value="'+(k&&k.oran_yuzde!=null?k.oran_yuzde:'')+'"></div></div>'
     +'<div><label>Alt Bileşenler <span class="muted">(bileşik hammadde ise — ör. Çikolata: şeker, kakao kitlesi, kakao yağı… ve hammadde içindeki oranları)</span></label>'
     +'<div id="altBilesenWrap">'+((k&&k.alt_bilesenler)||[]).map(altBilesenSatiri).join('')+'</div>'
