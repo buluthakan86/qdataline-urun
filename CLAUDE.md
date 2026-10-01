@@ -643,3 +643,5 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 
 ## 01.10.2026
 - 01.10 E2E P2: sertifika bitiş<başlangıç engellendi. (Önceki P1'ler — spec negatif, reçete oranı, raf günü, tr-TR büyük harf — zaten kapalıydı.) Açık: EN kalıntıları, spec silme yok, kendi spec'ini onaylama (orta).
+
+- 01.10 (akşam): sol menüye ortak arama kutusu eklendi (`qdl-navsearch.js`, kaynak _platform-ortak/istemci). Geri dönüş: script etiketini ve dosyayı sil.
