@@ -2111,6 +2111,7 @@ async function sertKaydet(sertId, urunId){
     gecerlilik_baslangic: val('stBaslangic')||null, gecerlilik_bitis: val('stBitis')||null,
     dosya_url:val('stDosya').trim(), notlar:val('stNot').trim()
   };
+  if(rec.gecerlilik_baslangic && rec.gecerlilik_bitis && rec.gecerlilik_bitis < rec.gecerlilik_baslangic){ e.textContent='Bitiş tarihi başlangıç tarihinden önce olamaz.'; kilitAc(); return; }
   try{
     var r = sertId ? await sb.from('urun_sertifikalari').update(rec).eq('id',sertId)
                    : await sb.from('urun_sertifikalari').insert(Object.assign({kk:'SERT-'+Date.now().toString(36)}, rec));
