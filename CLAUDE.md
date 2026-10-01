@@ -635,3 +635,8 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 ## 30.09.2026 — Uçtan uca (E2E) test turu düzeltmeleri
 
 - Reçete oranı 0–100, spesifikasyon sayısal alanlar negatif olamaz (URS.html).
+
+## 01.10.2026 — Kullanıcı-rol E2E turu düzeltmeleri
+
+- Etiket alerjen metni `toLocaleUpperCase('tr-TR')` (İ/ı; yasal ambalaj metni); Ar-Ge raf günü negatif olamaz.
+- Açık: sertifika bitiş<başlangıç kabul, kendi spesifikasyonunu onaylama, 'Ürüne dönüştür' atomik değil.
