@@ -1414,6 +1414,7 @@ async function argeOlayKaydet(projeId, id, tur){
   var u = document.getElementById('aoUygun'), g = document.getElementById('aoGun');
   var rec = { proje_id:projeId, tur:tur, tarih:val('aoTarih')||todayISO(), deneme_id:val('aoDeneme')||null, baslik:val('aoBaslik').trim(), detay:val('aoDetay').trim(), puanlar:puanlar,
     raf_gun: g&&g.value!==''?Number(g.value):null, uygun: u&&u.value!==''?u.value==='1':null };
+  if(rec.raf_gun!=null && (isNaN(rec.raf_gun) || rec.raf_gun<0)){ e.textContent=t('Raf günü negatif olamaz.'); kilitAc(); return; }
   if(!rec.baslik && !rec.detay && !Object.keys(puanlar).length){ e.textContent=t('Başlık, detay ya da puan girin.'); kilitAc(); return; }
   try{ var r = id ? await sb.from('urun_arge_olaylar').update(rec).eq('id',id) : await sb.from('urun_arge_olaylar').insert(rec);
     if(r.error) throw r.error; await loadAll(); openArgeProje(projeId,'testler'); }catch(x){ e.textContent=ursHata(x); }
@@ -2016,7 +2017,7 @@ function etiketMetniGoster(specId){
   var metin = ''
     +'<p><b>'+esc(s.gida_adi||u.ad)+'</b></p>'
     +'<p><b>İçindekiler:</b> '+(icindekiler||'—')+'.</p>'
-    +'<p><b>Alerjen Uyarısı:</b> '+(alerjenler.length?('Şunları içerir: '+esc(alerjenler.join(', ').toUpperCase())+'.'):'Bilinen bir alerjen içermez.')+(s.capraz_bulasma_riski?(' '+esc(s.capraz_bulasma_riski)):'')+'</p>'
+    +'<p><b>Alerjen Uyarısı:</b> '+(alerjenler.length?('Şunları içerir: '+esc(alerjenler.join(', ').toLocaleUpperCase('tr-TR'))+'.'):'Bilinen bir alerjen içermez.')+(s.capraz_bulasma_riski?(' '+esc(s.capraz_bulasma_riski)):'')+'</p>'
     +'<p><b>Net Miktar:</b> '+esc(s.net_miktar||'—')+'</p>'
     +'<p><b>Beslenme Bildirimi (100 g/ml):</b> '+besin+'</p>'
     +'<p><b>Muhafaza Koşulları:</b> '+esc(s.muhafaza_kosullari||'—')+'</p>'
