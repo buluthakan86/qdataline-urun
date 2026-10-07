@@ -492,6 +492,8 @@ function ursHata(err){
   var msj = String((err && err.message) || '');
   var kod = err && err.code;
   if(/QDL_YALNIZ_ADMIN/.test(msj)) return 'Bu işlem yalnız yönetici tarafından yapılabilir.';
+  if(/URS_KENDI_ONAY_YASAK/.test(msj)) return 'Spesifikasyonu hazırlayan kişi onaylayamaz. Firmadaki başka bir yetkilinin onaylaması gerekir (ya da "Onay İçin E-posta Gönder" ile üst yöneticiye gönderin).';
+  if(/URS_ONAYLAYAN_UNVAN_GEREKLI/.test(msj)) return 'Onaylamak için "Onaylayan Unvanı" alanı zorunludur.';
   if(kod === '23505' || /duplicate key/i.test(msj)) return 'Bu kayıt zaten var.';
   if(kod === '23503') return 'İlişkili bir kayıt bulunamadı.';
   if(kod === '23502') return 'Zorunlu bir alan boş bırakıldı.';
