@@ -654,3 +654,10 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 
 ## 07.10.2026 — "Ürüne dönüştür" atomik (sql/17, CANLI)
 - `urs_arge_urune_donustur(proje)` RPC: ürün + reçete kalemleri + proje (donusen_urun_id/aşama) + olay TEK işlemde; tekrar çağrı URS_ZATEN_DONUSTU, kazanan yoksa URS_KAZANAN_YOK. İstemci artık bu RPC'yi çağırır. Geri dönüş: commit revert (eski 4 yazmalı akış) + fonksiyonu drop.
+
+## 08.10.2026 — Yüzen düğmeler (Q-AI + Sorun bildir) tek ortak yığın
+- Sorun: iki düğme (44px/pill, sağ altta) alt alta binip tablo sağ sütununu / kaydet düğmelerini kapatıyordu; Q-AI rengi (#C084FC) canlıydı.
+- Çözüm: `qdl-ajan.js` VE `qdl-destek-link.js` dosyalarının başındaki `QDL-DOCK` bloğu (iki dosyada BİREBİR aynı, `window.__qdlDock` ile bir kez çalışır). İki küçük (36px) yuvarlak simge sağ altta alt alta durur, çakışmaz; altta sabit çubuk/başka sabit düğme varsa dock onun üstüne çıkar; tam ekran pencere/menü açıkken gizlenir (tur perdesi hariç); yazdırmada gizli; üstteki "–/+" ile küçültülür (`qdl_dock_kapali`, localStorage).
+- Renk: Q-AI düğmesi/başlığı koyu menekşe `#5B45A8` + beyaz (kontrast ~7:1), Sorun bildir nötr gri-lacivert (açık temada beyaz).
+- Düğme kimlikleri: `#sorunBildirBtn`, `#qdlSorunBtn` (Ekipman), `#qk-tour-sorunbildir` (Kalite), `#qaiBtn`. Yeni düğme tasarlarken bu bloğa ekle; modül HTML'ine ayrıca konum CSS'i YAZMA (blok `!important` ile ezer).
+- Blok değişirse tüm modüllerde iki dosyayı da güncelle ve HTML'deki `?v=` değerini artır.
