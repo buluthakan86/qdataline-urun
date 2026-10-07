@@ -491,6 +491,8 @@ function ursHata(err){
   try{ console.error('[qdl/urs]', err); }catch(e){}
   var msj = String((err && err.message) || '');
   var kod = err && err.code;
+  if(/URS_ZATEN_DONUSTU/.test(msj)) return 'Bu Ar-Ge projesi zaten ürüne dönüştürülmüş.';
+  if(/URS_KAZANAN_YOK/.test(msj)) return 'Önce kazanan denemeyi seçin.';
   if(/QDL_YALNIZ_ADMIN/.test(msj)) return 'Bu işlem yalnız yönetici tarafından yapılabilir.';
   if(/URS_KENDI_ONAY_YASAK/.test(msj)) return 'Spesifikasyonu hazırlayan kişi onaylayamaz. Firmadaki başka bir yetkilinin onaylaması gerekir (ya da "Onay İçin E-posta Gönder" ile üst yöneticiye gönderin).';
   if(/URS_ONAYLAYAN_UNVAN_GEREKLI/.test(msj)) return 'Onaylamak için "Onaylayan Unvanı" alanı zorunludur.';
@@ -1444,12 +1446,10 @@ async function argeUruneDonustur(projeId){
   if(!confirm(t('"'+p.ad+'" adıyla yeni ürün ve Deneme #'+d.deneme_no+' reçetesi oluşturulsun mu?'))) return;
   if(kilitliMi()) return;
   try{
-    var u=await sb.from('urun_urunler').insert({kk:'URN-'+Date.now().toString(36), ad:p.ad, kategori:p.kategori||'', aciklama:(p.aciklama||'')+(p.aciklama?'\n':'')+t('Ar-Ge projesinden')+': '+p.kk, durum:'Aktif'}).select('id').single();
+    /* 07.10.2026: ürün + reçete + proje güncellemesi + olay tek işlemde (sql/17); eskiden 4 ayrı yazmaydı */
+    var u=await sb.rpc('urs_arge_urune_donustur', { p_proje: projeId });
     if(u.error) throw u.error;
-    var kalemler=(d.recete||[]).map(function(k,i){ return {kk:'REC-'+Date.now().toString(36)+i, urun_id:u.data.id, hammadde_adi:k.hammadde_adi, oran_yuzde:k.oran_yuzde, alerjenler:k.alerjenler||[], sira_no:i}; });
-    if(kalemler.length){ var rr=await sb.from('urun_receteler').insert(kalemler); if(rr.error) throw rr.error; }
-    await sb.from('urun_arge_projeleri').update({donusen_urun_id:u.data.id, asama:'Ürüne Dönüştürüldü'}).eq('id',projeId);
-    await sb.from('urun_arge_olaylar').insert({proje_id:projeId, deneme_id:d.id, tur:'Aşama', baslik:t(p.asama)+' → '+t('Ürüne Dönüştürüldü'), detay:t('Ürün oluşturuldu')+': '+p.ad});
+    u={ data:{ id:u.data } };
     await loadAll(); buildNav(); closeModal(); showView('urunler'); openUrunDetay(u.data.id);
   }catch(x){ alert(ursHata(x)); }
   finally{ kilitAc(); }

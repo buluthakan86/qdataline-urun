@@ -651,3 +651,6 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 
 ## 07.10.2026 — Reçete toplamı onay uyarısı
 - Spesifikasyon "Onayla ve Kaydet"te reçete yoksa ya da oranlar toplamı %100'den ±0,5'ten fazla saparsa onay penceresi uyarı verir (yumuşak uyarı, sert engel değil — kullanıcı onaylayabilir). Reçete ekranındaki ⚠ rozeti zaten vardı. Geri dönüş: commit revert.
+
+## 07.10.2026 — "Ürüne dönüştür" atomik (sql/17, CANLI)
+- `urs_arge_urune_donustur(proje)` RPC: ürün + reçete kalemleri + proje (donusen_urun_id/aşama) + olay TEK işlemde; tekrar çağrı URS_ZATEN_DONUSTU, kazanan yoksa URS_KAZANAN_YOK. İstemci artık bu RPC'yi çağırır. Geri dönüş: commit revert (eski 4 yazmalı akış) + fonksiyonu drop.
