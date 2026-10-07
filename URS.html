@@ -1899,6 +1899,12 @@ async function specKaydet(specId, urunId, durum){
     durum:durum, onaylayan_rol:(val('spOnayRol')||'').trim(), kaydetme_notu:(val('spKaydetmeNotu')||'').trim()
   };
   if(!rec.gida_adi){ e.textContent='Gıdanın adı zorunludur.'; kilitAc(); return; }
+  if(durum==='Onaylı'){
+    // 07.10.2026: onaydan önce reçete toplamı kontrolü (yumuşak uyarı — sert engel değil)
+    var rk = receteOf(urunId), rToplam = rk.reduce(function(sm,r){ return sm+(Number(r.oran_yuzde)||0); }, 0);
+    var rUyari = !rk.length ? 'Bu ürünün reçetesinde hiç hammadde yok.' : (Math.abs(rToplam-100) > 0.5 ? 'Reçete oranlarının toplamı %'+fmt(rToplam)+' (%100 olmalı).' : '');
+    if(rUyari && !confirm(rUyari+'\n\nİçindekiler ve alerjen bilgisi reçeteden türetildiği için bu durum etiketi etkiler. Yine de onaylansın mı?')){ kilitAc(); return; }
+  }
   if(durum==='Onaylı' && !rec.onaylayan_rol){ e.textContent='Onaylamak için "Onaylayan Unvanı" alanı zorunludur.'; kilitAc(); return; }
   var sayiAlanlari = [['alkol_derecesi','Alkol derecesi'],['raf_omru_ay','Raf ömrü'],['enerji_kcal','Enerji'],['yag_g','Yağ'],['doymus_yag_g','Doymuş yağ'],['trans_yag_g','Trans yağ'],['karbonhidrat_g','Karbonhidrat'],['seker_g','Şeker'],['protein_g','Protein'],['tuz_g','Tuz']];
   for(var si=0; si<sayiAlanlari.length; si++){ var sv = rec[sayiAlanlari[si][0]]; if(sv!=null && sv<0){ e.textContent = sayiAlanlari[si][1]+' negatif olamaz.'; kilitAc(); return; } }

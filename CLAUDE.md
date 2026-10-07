@@ -648,3 +648,6 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 
 ## 07.10.2026 — Görev ayrılığı (sql/16)
 - Hazırlayan (created_by) kendi spesifikasyonunu onaylayamaz (URS_KENDI_ONAY_YASAK); firmada başka aktif ADMIN/EDITOR yoksa serbest ve `kendi_onayi=true`. E-posta onay linki (auth.uid boş) etkilenmez. Canlı + geri alınan test geçti. Geri dönüş: sql/urs_onay_unvani_zorunlu.sql fonksiyonu.
+
+## 07.10.2026 — Reçete toplamı onay uyarısı
+- Spesifikasyon "Onayla ve Kaydet"te reçete yoksa ya da oranlar toplamı %100'den ±0,5'ten fazla saparsa onay penceresi uyarı verir (yumuşak uyarı, sert engel değil — kullanıcı onaylayabilir). Reçete ekranındaki ⚠ rozeti zaten vardı. Geri dönüş: commit revert.
