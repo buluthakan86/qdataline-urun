@@ -39,7 +39,7 @@
       talepHata: 'Gönderilemedi. Lütfen tekrar deneyin.', kalan: ' mesaj hakkı kaldı (bu ay)'
     };
   };
-  function istemci() { try { return typeof db !== 'undefined' ? db : null; } catch (e) { return null; } }
+  function istemci() { try { if (typeof db !== 'undefined' && db && db.auth) return db; if (typeof sb !== 'undefined' && sb && sb.auth) return sb; if (typeof supa !== 'undefined' && supa && supa.auth) return supa; return null; } catch (e) { return null; } }
 
   // ---------- Stil ----------
   var st = document.createElement('style');
@@ -127,7 +127,7 @@
   async function durumuYenile() {
     var c = istemci(); if (!c) return;
     try {
-      var r = await c.rpc('qdl_qai_benim_durumum');
+      var r = await (typeof c.schema === 'function' ? c.schema('public') : c).rpc('qdl_qai_benim_durumum');
       durum = (r && r.data) || { yetkili: false };
     } catch (e) { durum = { yetkili: false }; }
     btn.classList.toggle('on', durum.yetkili === true);
