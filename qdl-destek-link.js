@@ -67,7 +67,7 @@
       if (r.top < H && r.bottom >= H - 120 && r.right > W - KOLON && r.height <= 170) bar = Math.max(bar, H - r.top);
       // tam ekran pencere/menü perdesi
       var z = parseInt(s.zIndex, 10);
-      if (z >= 50 && r.width >= W * 0.9 && r.height >= H * 0.9 && !/tour|onboard|intro|spotlight|toast|loading|splash/i.test(e.id + ' ' + (typeof e.className === 'string' ? e.className : ''))) modal = true;
+      if (z >= 50 && s.pointerEvents !== 'none' && parseFloat(s.opacity) > 0.05 && r.width >= W * 0.9 && r.height >= H * 0.9 && !/tour|onboard|intro|spotlight|toast|loading|splash/i.test(e.id + ' ' + (typeof e.className === 'string' ? e.className : ''))) modal = true;
     }
     var b = TABAN + (bar ? bar - 0 + 4 : 0);
     var q = b + (sv ? ARA : 0), t = q + (qv ? ARA : 0);
