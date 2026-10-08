@@ -661,3 +661,6 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 - Renk: Q-AI düğmesi/başlığı koyu menekşe `#5B45A8` + beyaz (kontrast ~7:1), Sorun bildir nötr gri-lacivert (açık temada beyaz).
 - Düğme kimlikleri: `#sorunBildirBtn`, `#qdlSorunBtn` (Ekipman), `#qk-tour-sorunbildir` (Kalite), `#qaiBtn`. Yeni düğme tasarlarken bu bloğa ekle; modül HTML'ine ayrıca konum CSS'i YAZMA (blok `!important` ile ezer).
 - Blok değişirse tüm modüllerde iki dosyayı da güncelle ve HTML'deki `?v=` değerini artır.
+
+## 08.10.2026 — Kılavuz
+- Yazılı kılavuz: `URS_KULLANIM_KILAVUZU.md` (ekran kodu ve CLAUDE.md kayıtlarından yazıldı, ekran görüntüsüz, sitede erişilebilir, gizli bilgi yok). Yeni özellik eklenince güncellenmeli.
