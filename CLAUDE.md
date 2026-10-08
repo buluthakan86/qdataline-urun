@@ -664,3 +664,6 @@ Rapor: proje hafızası `project_6_modul_denetim_turu_2026_09_17`.
 
 ## 08.10.2026 — Kılavuz
 - Yazılı kılavuz: `URS_KULLANIM_KILAVUZU.md` (ekran kodu ve CLAUDE.md kayıtlarından yazıldı, ekran görüntüsüz, sitede erişilebilir, gizli bilgi yok). Yeni özellik eklenince güncellenmeli.
+
+## Sol menu standardi (08.10.2026)
+Hover/aktif menu gorunumu platform standardina alindi: modul rengiyle (--leaf) yari saydam dolgu + sol cizgi (--nav-line), pasif yazi --navitem-ink degiskeni (QDL-NAV v1 blogu). Geri donus: onceki commit 4680cc8.

@@ -51,8 +51,6 @@ html[data-theme="light"]{
 }
 /* 27.09.2026 açık temada sol menü + durum renkleri okunurluğu (yazılar sabit açık renkteydi) */
 html[data-theme="light"]{--ok:#047857; --warn:#B45309; --crit:#DC2626; --blue:#1D4ED8; --purple:#6D28D9; --miss:#56675E; --na:#56675E; --leaf-d:#4D7C0F; --lime:#4D7C0F;}
-html[data-theme="light"] .nav-item{color:#3A4150}
-html[data-theme="light"] .nav-item.on{color:var(--ink)}
 html[data-theme="light"] .nav-item .cnt{background:var(--mint); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line)}
 html[data-theme="light"] .nav-group-head{color:#5B6472}
 html[data-theme="light"] .nav-group-head:hover{color:var(--leaf)}
@@ -97,8 +95,6 @@ aside.side{width:248px; flex-shrink:0; background:var(--card); color:var(--ink);
 .side.collapsed .nav-group.collapsed .nav-group-body{display:flex}
 .nav-item{display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:9px; color:#C7D9A7; font-size:13px; font-weight:600; border:none; background:transparent; width:100%; text-align:left; transition:.13s; margin-bottom:2px; cursor:pointer}
 .nav-item .ico{width:19px; height:19px; flex-shrink:0; text-align:center}
-.nav-item:hover{background:var(--mint-2)}
-.nav-item.on{background:var(--mint); color:var(--ink); box-shadow:inset 3px 0 0 var(--leaf)}
 .nav-item .cnt{margin-left:auto; font-size:11px; padding:1px 8px; border-radius:20px; font-weight:800; background:#2E3A18; color:#DCEBB8}
 
 .main{flex:1; min-width:0}
@@ -248,6 +244,14 @@ tr:hover td{background:var(--mint-2)}
 body.qdl-editor [data-urunsil],
 body.qdl-editor [data-sertsil],
 body.qdl-editor .nav-item[data-v="ayarlar"]{display:none !important}
+/* QDL-NAV v1 (08.10.2026): standart sol menu — modul rengiyle yari saydam hover/aktif dolgu; pasif yazi tema degiskeni */
+:root{--navitem-ink:#C7D9A7;--nav-line:var(--leaf)}
+html[data-theme="light"]{--navitem-ink:#3A4150;--nav-line:#598F0B;}
+.nav-item{color:var(--navitem-ink)}
+.nav-item:hover{background:color-mix(in srgb,var(--leaf) 8%,transparent);color:var(--ink)}
+.nav-item.on{background:color-mix(in srgb,var(--leaf) 16%,transparent);color:var(--ink);box-shadow:inset 3px 0 0 var(--nav-line,var(--leaf));font-weight:600}
+.nav-item:focus-visible{outline:2px solid var(--nav-line,var(--leaf));outline-offset:-2px}
+.nav-item:disabled:hover{background:transparent}
 </style>
 <script src="/qdl-hata.js"></script>
 <script src="/qdl-takvim.js"></script><script src="/qdl-navsearch.js?v=20261001"></script>
