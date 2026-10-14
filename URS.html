@@ -164,7 +164,9 @@ tr:hover td{background:var(--mint-2)}
 .rep-inner{background:#fff; color:#1E2A10; border-radius:10px; padding:22px}
 .rep-inner table{border-collapse:collapse; width:100%; margin:10px 0}
 .rep-inner th,.rep-inner td{border:1px solid #D8E4BB; padding:7px 10px; font-size:12.5px; text-align:left}
-.rep-inner th{background:#EEF5DC}
+.rep-inner th{background:#EEF5DC; color:#1E2A10}
+.rep-inner td{color:#1E2A10}
+.rep-inner tr:hover td{background:#F3F8E8; color:#1E2A10}
 .rep-inner h2{font-size:16px; margin-bottom:4px}
 .rep-inner .rep-sub{color:#5D7238; font-size:12px; margin-bottom:16px}
 /* 25.09.2026: pencere içindeki alanlar sütunu tam doldursun (spesifikasyon formunda kutular çok küçüktü) */
@@ -1756,6 +1758,9 @@ function openSpecDetay(specId, urunIdForNew){
     +'<div><label>Ürün Ölçüsü <span class="muted">(opsiyonel — ör. 20 × 12 × 5 cm, Ø 8 cm)</span></label><input id="spUrunOlcu" value="'+esc(f.urun_olcusu||'')+'"></div>'
     +'<div><label>Kullanım Talimatı</label><textarea id="spKullanim" rows="2">'+esc(f.kullanim_talimati)+'</textarea></div>'
 
+    +'<div class="sec-h">İçindekiler <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(reçetedeki azalan miktar sırasıyla; oranlar gösterilmez)</span></div>'
+    +'<div class="note" id="spIcindekiler">'+(icindekilerMetni(urunId)||'Bu ürün için henüz reçete girdisi yok. Reçeteler ekranından hammadde ekleyin.')+'</div>'
+
     +'<div class="sec-h">Gıda Güvenliği / BRCGS Ek Bilgileri</div>'
     +'<div class="grid2"><div><label>Hedef Tüketici Grubu</label><input id="spHedefGrup" value="'+esc(f.hedef_tuketici_grubu)+'" placeholder="ör. Genel tüketici / Çocuk / Alerjik hassas grup"></div>'
     +'<div><label>Taşıma Koşulları</label><input id="spTasima" value="'+esc(f.tasima_kosullari)+'" placeholder="ör. 4°C altında soğuk zincirle taşınmalıdır"></div></div>'
@@ -2155,10 +2160,10 @@ function renderAyarlar(){
     });
   }
   return '<div class="panel"><div class="ph"><h2>Firma Bilgileri</h2></div><div class="pb">'
-    +'<div class="note">Bu bilgiler spesifikasyon PDF çıktısının üst bilgisinde (letterhead) ve yıllık gözden geçirme bildiriminde kullanılır.</div>'
+    +'<div class="note">Bu bilgiler spesifikasyon PDF çıktısının üst bilgisinde ve yıllık gözden geçirme bildiriminde kullanılır. Logo yüklenince ayrıca Kaydet düğmesine basmanız gerekmez.</div>'
     +'<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">'
-    +'<div>'+(fb.logo_url?'<img id="fbLogoPreview" style="width:120px;height:120px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff">':'<div class="muted" style="width:120px;height:120px;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center">Logo yok</div>')
-    +(ce?'<div style="margin-top:8px"><input type="file" id="fbLogoInput" accept="image/*" style="max-width:160px"><br><button type="button" class="btn btn-line btn-sm" style="margin-top:6px" data-urs-act="firmaLogoYukle">Logo Yükle</button><div id="fbLogoMsj" class="muted" style="font-size:11px"></div></div>':'')+'</div>'
+    +'<div><div id="fbLogoAlan">'+(fb.logo_url?'<img id="fbLogoPreview" alt="Firma logosu" style="width:120px;height:120px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff">':'<div class="muted" style="width:120px;height:120px;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center">Logo yok</div>')+'</div>'
+    +(ce?'<div style="margin-top:8px"><input type="file" id="fbLogoInput" accept="image/png,image/jpeg,image/webp" style="max-width:160px"><br><button type="button" class="btn btn-line btn-sm" style="margin-top:6px" data-urs-act="firmaLogoYukle">Logo Yükle</button><div id="fbLogoMsj" class="muted" style="font-size:11px"></div></div>':'')+'</div>'
     +'<div style="flex:1;min-width:260px;display:grid;gap:10px">'
     +'<div><label>Firma Adı</label><input id="fbAd" value="'+esc(fb.firma_adi||'')+'" '+(ce?'':'disabled')+'></div>'
     +'<div><label>Adres</label><textarea id="fbAdres" rows="2" '+(ce?'':'disabled')+'>'+esc(fb.adres||'')+'</textarea></div>'
@@ -2176,20 +2181,35 @@ function renderAyarlar(){
     +'<div class="note">Spesifikasyon formundaki birim, ambalaj tipi, paket ve palet ölçüsü seçenekleri buradan yönetilir. Listede olmayan bir değer eklediğinizde tüm spesifikasyonlarda seçilebilir olur.</div>'
     +ursListelerHtml(ce)+'</div></div>';
 }
-var FIRMA_LOGO_YOLU = null;
 async function firmaLogoYukle(){
+  if(kilitliMi()) return;
   var input = document.getElementById('fbLogoInput');
   var msj = document.getElementById('fbLogoMsj');
-  if(!input.files || !input.files[0]) return;
+  if(!input || !input.files || !input.files[0]){ kilitAc(); return; }
   msj.textContent = 'Yükleniyor…';
+  var yol = '';
+  var kaydedildi = false;
   try{
     var f = input.files[0];
-    var yol = cloudTenantId+'/firma/logo-'+Date.now()+'-'+f.name.replace(/[^a-zA-Z0-9.\-_]/g,'_');
-    var up = await sb.storage.from('urun-belgeler').upload(yol, f, { upsert:true });
+    if(!['image/png','image/jpeg','image/webp'].includes(f.type)) throw new Error('PNG, JPG veya WebP görseli seçin.');
+    if(f.size > 3 * 1024 * 1024) throw new Error('Logo en fazla 3 MB olabilir.');
+    yol = cloudTenantId+'/firma/logo-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+f.name.replace(/[^a-zA-Z0-9.\-_]/g,'_');
+    var up = await sb.storage.from('urun-belgeler').upload(yol, f, { contentType:f.type, upsert:false });
     if(up.error) throw up.error;
-    FIRMA_LOGO_YOLU = yol;
-    msj.textContent = 'Yüklendi — Kaydet\'e basmayı unutmayın.';
-  }catch(e){ msj.textContent = 'Yükleme başarısız: '+ursHata(e); }
+    var signed = await sb.storage.from('urun-belgeler').createSignedUrl(yol, 3600);
+    if(signed.error || !signed.data) throw signed.error || new Error('Logo önizlemesi oluşturulamadı.');
+    var saved = await sb.from('urun_firma_bilgileri').upsert({tenant_id:cloudTenantId, logo_url:yol}, {onConflict:'tenant_id'});
+    if(saved.error) throw saved.error;
+    kaydedildi = true;
+    state.firmaBilgisi = Object.assign({}, state.firmaBilgisi||{}, {logo_url:yol});
+    var alan = document.getElementById('fbLogoAlan');
+    if(alan){ alan.innerHTML = '<img id="fbLogoPreview" alt="Firma logosu" style="width:120px;height:120px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff">'; document.getElementById('fbLogoPreview').src = signed.data.signedUrl; }
+    msj.textContent = 'Logo kaydedildi. Spesifikasyon yazdırma görünümünde kullanılacak.';
+    input.value = '';
+  }catch(e){
+    if(yol && !kaydedildi) await sb.storage.from('urun-belgeler').remove([yol]);
+    msj.textContent = 'Yükleme başarısız: '+ursHata(e);
+  }finally{ kilitAc(); }
 }
 async function firmaKaydet(){
   if(kilitliMi()) return;
@@ -2199,7 +2219,6 @@ async function firmaKaydet(){
     ust_yonetici_ad: val('fbUstAd').trim(), ust_yonetici_eposta: val('fbUstEposta').trim(),
     isletme_kayit_no: val('fbKayitNo').trim(), isletme_onay_no: val('fbOnayNo').trim()
   };
-  if(FIRMA_LOGO_YOLU) rec.logo_url = FIRMA_LOGO_YOLU;
   try{
     var r = await sb.from('urun_firma_bilgileri').upsert(Object.assign({tenant_id:cloudTenantId}, rec), {onConflict:'tenant_id'});
     if(r.error) throw r.error;
