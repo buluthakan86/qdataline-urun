@@ -1,5 +1,12 @@
 # CLAUDE.md — Reçete ve Spesifikasyon Yönetimi (URS)
 
+## 14.10.2026 — Onaylanan iki dilli spesifikasyon yazdırma düzeni
+
+- `URS.html` spesifikasyon yazdırma görünümü kullanıcının onayladığı sıraya göre yeniden kuruldu: ürün adı, tanım, içindekiler, fiziksel/kimyasal/mikrobiyolojik parametreler, alerjen, beslenme, mevzuata uyum, paketleme, tüketici grubu, duyusal özellikler, üretim metodu, varsa pişirme/kullanım, raf ömrü, depolama/taşıma, ürün beyanları, menşe. Spec no logonun karşısında üsttedir. Başlıklar TR/EN birlikte basılır; serbest metin otomatik çevrilmez.
+- Beslenmede doymuş yağ ve şekerler içerden başlayan alt satırlardır. Enerji depodaki kcal değerinden 4,184 katsayısıyla kJ'a çevrilir ve `kJ / kcal` basılır; diğer değerlerin birimi g'dır. Eksik sayısal değer `—` gösterilir.
+- `sql/17_spec_yazdirma_alanlari.sql` üç ek alan sağlar: `uretim_metodu`, `urun_beyanlari`, `uyum_beyanlari`. Mevzuata uyum için GDO, pestisit kalıntıları, bulaşanlar ve diğer başlıklarında kullanıcı beyanı ile dayanak ayrı girilir. Boş alan otomatik “uygun” sayılmaz. Ürün tanımı mevcut `urun_urunler.aciklama` alanından gelir.
+- Canlı Supabase'e bu eklemeli migration uygulandı. Inline JS değiştiğinden `_headers` CSP hash'i yenilenmelidir. Yayın yalnız Cloudflare Pages `qdataline-urun` üzerinden yapılır.
+
 ## 14.10.2026 — Spesifikasyon okunurluğu, içindekiler ve firma logosu
 
 - `URS.html`: Beyaz yazdırma görünümünde tablo başlıkları ve fareyle üzerine gelinen satırlar her iki temada da koyu metin/açık arka plan kullanır. Genel tema renkleri bu sabit açık zemine taşınmaz.
