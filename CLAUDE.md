@@ -1,5 +1,12 @@
 # CLAUDE.md — Reçete ve Spesifikasyon Yönetimi (URS)
 
+## 14.10.2026 — Spesifikasyon okunurluğu, içindekiler ve firma logosu
+
+- `URS.html`: Beyaz yazdırma görünümünde tablo başlıkları ve fareyle üzerine gelinen satırlar her iki temada da koyu metin/açık arka plan kullanır. Genel tema renkleri bu sabit açık zemine taşınmaz.
+- Spesifikasyon detay penceresi, reçete kalemlerinin yalnız adlarını `oran_yuzde` azalan sırada gösterir; oranları ve miktarları açığa çıkarmaz. Liste mevcut `icindekilerMetni()` üzerinden üretildiği için yazdırma ve etiket metni ile aynı sırayı kullanır.
+- Firma logosu yeni, benzersiz dosya yoluna `upsert:false` ile yüklenir: `urun-belgeler` bucket'ında UPDATE politikası yoktur, eski `upsert:true` bununla uyumsuzdu. Logo URL'si yükleme sırasında `urun_firma_bilgileri` kaydına yazılır ve Ayarlar önizlemesi hemen güncellenir; ayrıca firma bilgisi Kaydet işlemine gerek kalmaz. Desteklenen biçimler PNG/JPG/WebP, sınır 3 MB. Spesifikasyon yazdırma görünümü kaydedilen logo yolundan imzalı URL üretir.
+- Değişen inline JavaScript için `_headers` CSP hash'i de yenilenmelidir. Yayın yalnız `qdataline-urun` Cloudflare Pages projesinden yapılır.
+
 ## ⚡ EK (14.09.2026) — Faz 1 "Görünürlük": sürüm damgası + tarayıcı hata toplama
 
 Platform-geneli. Ayrıntı ve gerekçeler: `_platform-ortak/README.md` → "Faz 1 — Görünürlük",
