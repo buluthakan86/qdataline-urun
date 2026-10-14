@@ -169,6 +169,15 @@ tr:hover td{background:var(--mint-2)}
 .rep-inner tr:hover td{background:#F3F8E8; color:#1E2A10}
 .rep-inner h2{font-size:16px; margin-bottom:4px}
 .rep-inner .rep-sub{color:#5D7238; font-size:12px; margin-bottom:16px}
+.spec-print h2{font-size:18px; margin:0}
+.spec-print h3{font-size:13px; margin:18px 0 5px; color:#315208; border-bottom:1px solid #D8E4BB; padding-bottom:5px}
+.spec-print table{margin:5px 0 10px}
+.spec-print{overflow-wrap:anywhere}
+.spec-print p{white-space:pre-wrap; margin:7px 0}
+.spec-print .spec-indent{padding-left:25px}
+.spec-print section{break-inside:avoid; page-break-inside:avoid}
+.spec-print .spec-head{display:flex; justify-content:space-between; gap:20px; align-items:flex-start; border-bottom:2px solid #65A30D; padding-bottom:12px; margin-bottom:16px}
+.spec-print .spec-meta{text-align:right; font-size:11px; flex-shrink:0}
 /* 25.09.2026: pencere içindeki alanlar sütunu tam doldursun (spesifikasyon formunda kutular çok küçüktü) */
 .modal .mb input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=color]), .modal .mb select, .modal .mb textarea{ width:100%; box-sizing:border-box; }
 .modal .mb textarea{ min-height:84px; }
@@ -1497,6 +1506,7 @@ function specFormAlanlari(s){
     gida_adi:s.gida_adi||'', net_miktar:s.net_miktar||'', tavsiye_son_tuketim:s.tavsiye_son_tuketim||'',
     muhafaza_kosullari:s.muhafaza_kosullari||'', isletme_adi_adres:s.isletme_adi_adres||'', isletme_kayit_no:s.isletme_kayit_no||'',
     mensei_ulke:s.mensei_ulke||'', kullanim_talimati:s.kullanim_talimati||'', alkol_derecesi:s.alkol_derecesi,
+    uretim_metodu:s.uretim_metodu||'', urun_beyanlari:s.urun_beyanlari||'', uyum_beyanlari:s.uyum_beyanlari||[],
     hedef_tuketici_grubu:s.hedef_tuketici_grubu||'', tasima_kosullari:s.tasima_kosullari||'',
     alerjen_beyani:s.alerjen_beyani||'', capraz_bulasma_riski:s.capraz_bulasma_riski||'',
     enerji_kcal:s.enerji_kcal, yag_g:s.yag_g, doymus_yag_g:s.doymus_yag_g, karbonhidrat_g:s.karbonhidrat_g,
@@ -1757,6 +1767,7 @@ function openSpecDetay(specId, urunIdForNew){
     +'<div><label>Raf Ömrü</label><div style="display:flex;gap:6px"><input id="spRafOmru" type="number" min="0" value="'+(f.raf_omru_ay!=null?f.raf_omru_ay:'')+'" style="flex:1"><select id="spRafBirim" style="width:96px;flex:0 0 96px">'+['gün','ay','yıl'].map(function(b){return '<option'+((f.raf_omru_birim||'ay')===b?' selected':'')+'>'+b+'</option>';}).join('')+'</select></div></div></div>'
     +'<div><label>Ürün Ölçüsü <span class="muted">(opsiyonel — ör. 20 × 12 × 5 cm, Ø 8 cm)</span></label><input id="spUrunOlcu" value="'+esc(f.urun_olcusu||'')+'"></div>'
     +'<div><label>Kullanım Talimatı</label><textarea id="spKullanim" rows="2">'+esc(f.kullanim_talimati)+'</textarea></div>'
+    +'<div><label>Üretim Metodu / Production Method</label><textarea id="spUretimMetodu" rows="3" placeholder="Ürün düzeyinde paylaşılabilecek üretim özeti">'+esc(f.uretim_metodu)+'</textarea></div>'
 
     +'<div class="sec-h">İçindekiler <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">(reçetedeki azalan miktar sırasıyla; oranlar gösterilmez)</span></div>'
     +'<div class="note" id="spIcindekiler">'+(icindekilerMetni(urunId)||'Bu ürün için henüz reçete girdisi yok. Reçeteler ekranından hammadde ekleyin.')+'</div>'
@@ -1808,6 +1819,16 @@ function openSpecDetay(specId, urunIdForNew){
       +'<button type="button" class="btn btn-line btn-sm" data-urs-act="yasalEkle">+ Boş Ekle</button>'
       +YASAL_ONERILEN.map(function(y){return '<button type="button" class="btn btn-line btn-sm" data-urs-act="yasalEkle" data-value="'+esc(y)+'">+ '+esc(y)+'</button>';}).join('')
       +'</div>'):'')
+
+    +'<div class="sec-h">Mevzuata Uyum Bilgisi / Regulatory Compliance Information</div>'
+    +'<div class="note">Bu bölüm yalnızca girilen beyan ve dayanağı gösterir; boş alanlar otomatik uygunluk beyanına dönüşmez.</div>'
+    +[['GDO','GDO / GMO'],['Pestisit kalıntıları','Pestisit kalıntıları / Pesticide residues'],['Bulaşanlar','Bulaşanlar / Contaminants'],['Diğer','Diğer / Other']].map(function(k){
+      var b=f.uyum_beyanlari.find(function(x){return x.konu===k[0];})||{};
+      return '<div class="uyumRow" data-konu="'+esc(k[0])+'" style="margin:10px 0"><label>'+esc(k[1])+'</label><div class="grid2">'
+        +'<textarea class="uyumBeyan" rows="2" placeholder="Beyan / Statement">'+esc(b.beyan||'')+'</textarea>'
+        +'<textarea class="uyumDayanak" rows="2" placeholder="Dayanak veya rapor / Evidence or report">'+esc(b.dayanak||'')+'</textarea></div></div>';
+    }).join('')
+    +'<div><label>Ürün Beyanları / Product Claims</label><textarea id="spUrunBeyanlari" rows="2" placeholder="Yalnızca dayanağı bulunan ürün beyanlarını girin">'+esc(f.urun_beyanlari)+'</textarea></div>'
 
     +'<div class="sec-h">Ürün Görselleri</div>'
     +'<div id="gorselWrap" style="display:flex;flex-wrap:wrap"></div>'
@@ -1878,6 +1899,10 @@ async function specKaydet(specId, urunId, durum){
     tavsiye_son_tuketim:val('spTETT').trim(), muhafaza_kosullari:val('spMuhafaza').trim(),
     isletme_adi_adres:val('spIsletme').trim(), isletme_kayit_no:val('spKayitNo').trim(),
     mensei_ulke:val('spMensei').trim(), kullanim_talimati:val('spKullanim').trim(),
+    uretim_metodu:val('spUretimMetodu').trim(), urun_beyanlari:val('spUrunBeyanlari').trim(),
+    uyum_beyanlari:Array.prototype.map.call(document.querySelectorAll('.uyumRow'), function(row){
+      return {konu:row.dataset.konu, beyan:row.querySelector('.uyumBeyan').value.trim(), dayanak:row.querySelector('.uyumDayanak').value.trim()};
+    }).filter(function(x){return x.beyan||x.dayanak;}),
     alkol_derecesi:numOrNull('spAlkol'), raf_omru_ay:numOrNull('spRafOmru'), raf_omru_birim:val('spRafBirim')||'ay', urun_olcusu:val('spUrunOlcu').trim(),
     hedef_tuketici_grubu:val('spHedefGrup').trim(), tasima_kosullari:val('spTasima').trim(),
     alerjen_beyani:val('spAlerjenBeyani').trim(), capraz_bulasma_riski:val('spCapraz').trim(),
@@ -1949,76 +1974,101 @@ async function specOnayEmailGonder(specId){
     var e2 = document.getElementById('spHata'); if(e2) e2.textContent = ursHata(x);
   }
 }
+function specPrintValue(v){ return (v==null||String(v).trim()==='') ? '—' : esc(v); }
+function specPrintGram(v){ return v==null ? '—' : fmt(v)+' g'; }
+function specPrintRow(label, valueHtml){
+  return '<tr><td>'+esc(label)+'</td><td>'+valueHtml+'</td></tr>';
+}
+function specPrintSection(title, body){
+  return '<section><h3>'+esc(title)+'</h3>'+body+'</section>';
+}
 async function specYazdir(specId){
   var s = state.specler.find(function(x){return x.id===specId;});
-  var u = state.urunler.find(function(x){return x.id===s.urun_id;});
-  var alerjenler = urunAlerjenleri(s.urun_id);
+  if(!s) return;
+  var u = state.urunler.find(function(x){return x.id===s.urun_id;}) || {};
   var fb = state.firmaBilgisi || {};
   var logoImgUrl = '';
   if(fb.logo_url){
-    try{ var signed = await sb.storage.from('urun-belgeler').createSignedUrl(fb.logo_url, 3600); logoImgUrl = signed.data?signed.data.signedUrl:''; }catch(e){}
+    try{
+      var signed = await sb.storage.from('urun-belgeler').createSignedUrl(fb.logo_url, 3600);
+      logoImgUrl = signed.data ? signed.data.signedUrl : '';
+    }catch(e){}
   }
-  var baslik = ''
-    + (logoImgUrl?'<img src="'+esc(logoImgUrl)+'" style="max-height:56px;max-width:180px;object-fit:contain;float:right">':'')
-    + '<div style="font-weight:700;font-size:14px">'+esc(fb.firma_adi||'')+'</div>'
-    + (fb.adres?'<div style="font-size:11px;color:#5D7238">'+esc(fb.adres)+'</div>':'')
-    + '<div style="clear:both;border-bottom:2px solid #65A30D;margin:8px 0 14px"></div>';
-  var html = '<div class="mh"><b>Spesifikasyon — Yazdırma Görünümü</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
-    +'<div class="mb"><div class="rep-inner">'
-    +(fb.firma_adi||fb.logo_url?baslik:'')
-    +'<h2>'+esc(s.gida_adi||u.ad)+'</h2>'
-    +'<div class="rep-sub">Spec Kodu: '+esc(s.spec_kodu)+' · Versiyon: v'+s.versiyon_no+' · Durum: '+esc(s.durum)+(s.onaylayan_ad?(' · Onaylayan: '+esc(s.onaylayan_ad)+(s.onaylayan_rol?' ('+esc(s.onaylayan_rol)+')':'')):'')+'</div>'
-    +'<div class="rep-sub">Oluşturulma: '+(s.created_at?new Date(s.created_at).toLocaleDateString('tr-TR'):'—')+' · Son Revizyon: '+(s.updated_at?new Date(s.updated_at).toLocaleDateString('tr-TR'):'—')+(s.sonraki_inceleme_tarihi?(' · Sonraki Gözden Geçirme: '+new Date(s.sonraki_inceleme_tarihi).toLocaleDateString('tr-TR')):'')+'</div>'
-    +'<table><tr><th colspan="2">TGK Madde 9 — Zorunlu Bilgiler</th></tr>'
-    +'<tr><td>Net Miktar</td><td>'+esc(s.net_miktar||'—')+'</td></tr>'
-    +'<tr><td>Tavsiye/Son Tüketim</td><td>'+esc(s.tavsiye_son_tuketim||'—')+'</td></tr>'
-    +(s.raf_omru_ay!=null?'<tr><td>Raf Ömrü</td><td>'+esc(s.raf_omru_ay)+' '+esc(s.raf_omru_birim||'ay')+'</td></tr>':'')
-    +(s.urun_olcusu?'<tr><td>Ürün Ölçüsü</td><td>'+esc(s.urun_olcusu)+'</td></tr>':'')
-    +'<tr><td>Muhafaza Koşulları</td><td>'+esc(s.muhafaza_kosullari||'—')+'</td></tr>'
-    +'<tr><td>İşletme</td><td>'+esc(s.isletme_adi_adres||'—')+' ('+esc(s.isletme_kayit_no||'—')+')</td></tr>'
-    +'<tr><td>Menşei Ülke</td><td>'+esc(s.mensei_ulke||'—')+'</td></tr>'
-    +(s.alkol_derecesi!=null?'<tr><td>Alkol Derecesi</td><td>%'+esc(s.alkol_derecesi)+'</td></tr>':'')
-    +'<tr><td>Kullanım Talimatı</td><td>'+esc(s.kullanim_talimati||'—')+'</td></tr></table>'
-    +'<table><tr><th colspan="2">Gıda Güvenliği Ek Bilgileri</th></tr>'
-    +'<tr><td>Hedef Tüketici Grubu</td><td>'+esc(s.hedef_tuketici_grubu||'—')+'</td></tr>'
-    +'<tr><td>Taşıma Koşulları</td><td>'+esc(s.tasima_kosullari||'—')+'</td></tr>'
-    +'<tr><td>Alerjen Beyanı</td><td>'+esc(s.alerjen_beyani||'—')+'</td></tr>'
-    +'<tr><td>Çapraz Bulaşma Riski</td><td>'+esc(s.capraz_bulasma_riski||'—')+'</td></tr></table>'
-    +((s.gramaj_secenekleri&&s.gramaj_secenekleri.length)?('<table><tr><th colspan="3">Net Miktar / Palet Seçenekleri</th></tr>'
-      +'<tr><td><b>Net Miktar</b></td><td><b>Palet Ölçüsü</b></td><td><b>Palette Adet</b></td></tr>'
-      +s.gramaj_secenekleri.map(function(g){return '<tr><td>'+esc(g.net_miktar||'—')+'</td><td>'+esc(g.palet_olcusu||'—')+'</td><td>'+(g.palette_adet!=null?g.palette_adet:'—')+'</td></tr>';}).join('')+'</table>'):'')
-    +((s.ambalaj_secenekleri&&s.ambalaj_secenekleri.length)?('<table><tr><th colspan="2">Ambalaj Tipleri</th></tr><tr><td colspan="2">'+s.ambalaj_secenekleri.map(esc).join(', ')+'</td></tr></table>'):'')
-    +(s.ambalaj_spesifikasyonu?('<table><tr><th colspan="2">Ambalaj Spesifikasyonu</th></tr><tr><td colspan="2">'+esc(s.ambalaj_spesifikasyonu)+'</td></tr></table>'):'')
-    +'<table><tr><th colspan="2">Beslenme Bildirimi (100 g/ml başına)</th></tr>'
-    +'<tr><td>Enerji</td><td>'+fmt(s.enerji_kcal)+' kcal</td></tr>'
-    +'<tr><td>Yağ</td><td>'+fmt(s.yag_g)+' g</td></tr>'
-    +'<tr><td style="padding-left:24px">- Doymuş Yağ</td><td>'+fmt(s.doymus_yag_g)+' g</td></tr>'
-    +(s.trans_yag_g!=null?'<tr><td style="padding-left:24px">- Trans Yağ</td><td>'+fmt(s.trans_yag_g)+' g</td></tr>':'')
-    +'<tr><td>Karbonhidrat</td><td>'+fmt(s.karbonhidrat_g)+' g</td></tr>'
-    +'<tr><td style="padding-left:24px">- Şeker</td><td>'+fmt(s.seker_g)+' g</td></tr>'
-    +'<tr><td>Protein</td><td>'+fmt(s.protein_g)+' g</td></tr>'
-    +'<tr><td>Tuz</td><td>'+fmt(s.tuz_g)+' g</td></tr></table>'
-    +((s.fiziksel_kimyasal_parametreler&&s.fiziksel_kimyasal_parametreler.length)?('<table><tr><th colspan="4">Fiziksel-Kimyasal Parametreler</th></tr>'
-      +'<tr><td><b>Parametre</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Birim</b></td></tr>'
-      +s.fiziksel_kimyasal_parametreler.map(function(p){return '<tr><td>'+esc(p.parametre)+'</td><td>'+esc(p.min||'—')+'</td><td>'+esc(p.max||'—')+'</td><td>'+esc(p.birim||'—')+'</td></tr>';}).join('')+'</table>'):'')
-    +(s.fiziksel_kimyasal_limitler?('<table><tr><td colspan="2" style="font-size:11px">Ek Not: '+esc(s.fiziksel_kimyasal_limitler)+'</td></tr></table>'):'')
-    +((s.mikrobiyolojik_parametreler&&s.mikrobiyolojik_parametreler.length)?('<table><tr><th colspan="4">Mikrobiyolojik Parametreler</th></tr>'
-      +'<tr><td><b>Parametre</b></td><td><b>Min</b></td><td><b>Max</b></td><td><b>Birim</b></td></tr>'
-      +s.mikrobiyolojik_parametreler.map(function(p){return '<tr><td>'+esc(p.parametre)+'</td><td>'+esc(p.min||'—')+'</td><td>'+esc(p.max||'—')+'</td><td>'+esc(p.birim||'—')+'</td></tr>';}).join('')+'</table>'):'')
-    +(s.mikrobiyolojik_limitler?('<table><tr><td colspan="2" style="font-size:11px">Ek Not: '+esc(s.mikrobiyolojik_limitler)+'</td></tr></table>'):'')
-    +((s.duyusal_kriterler_yapilandirilmis&&s.duyusal_kriterler_yapilandirilmis.length)?('<table><tr><th colspan="2">Duyusal Kriterler</th></tr>'
-      +s.duyusal_kriterler_yapilandirilmis.map(function(d){return '<tr><td>'+esc(d.kriter)+'</td><td>'+esc(d.aciklama||'—')+'</td></tr>';}).join('')+'</table>'):'')
-    +((s.yasal_dayanaklar&&s.yasal_dayanaklar.length)?('<table><tr><th colspan="2">Yasal Dayanaklar</th></tr><tr><td colspan="2"><ul style="margin:0;padding-left:18px">'+s.yasal_dayanaklar.map(function(y){return '<li>'+esc(y)+'</li>';}).join('')+'</ul></td></tr></table>'):'')
-    +'<table><tr><th colspan="2">İçindekiler (azalan ağırlık sırasıyla)</th></tr><tr><td colspan="2">'+(icindekilerMetni(s.urun_id)||'—')+'</td></tr></table>'
-    +((s.ozel_alanlar&&s.ozel_alanlar.length)?('<table><tr><th colspan="2">Özel Alanlar</th></tr>'
-      +s.ozel_alanlar.map(function(oa){return '<tr><td>'+esc(oa.ad)+'</td><td>'+esc(oa.deger)+'</td></tr>';}).join('')+'</table>'):'')
-    +((s.musteri_spesifikasyonlari&&s.musteri_spesifikasyonlari.length)?('<table><tr><th colspan="2">Müşteri Spesifikasyonu Referans Dosyaları</th></tr>'
-      +s.musteri_spesifikasyonlari.map(function(d){return '<tr><td>'+esc(d.ad||'—')+'</td><td>'+esc(d.aciklama||'—')+'</td></tr>';}).join('')+'</table>'):'')
-    +'<div style="margin-top:16px; font-size:11px; color:#5D7238">Bu belge '+new Date().toLocaleDateString('tr-TR')+' tarihinde QDataLine Reçete ve Spesifikasyon Yönetimi\'nden alınmıştır — v'+s.versiyon_no+'.</div>'
-    +'</div></div><div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Kapat</button><button class="btn btn-leaf" data-urs-act="printPage">🖨 Yazdır</button></div>';
+  var tablo = function(rows){ return '<table>'+rows+'</table>'; };
+  var bosBeyan = 'Beyan girilmedi / No statement provided';
+  var html = '<div class="mh"><b>Ürün Spesifikasyonu / Product Specification</b><button class="x" data-urs-act="closeModal">&times;</button></div>'
+    +'<div class="mb"><div class="rep-inner spec-print">'
+    +'<div class="spec-head"><div>'
+    +(logoImgUrl?'<img src="'+esc(logoImgUrl)+'" alt="Firma logosu / Company logo" style="max-height:65px;max-width:180px;object-fit:contain;display:block;margin-bottom:5px">':'')
+    +(fb.firma_adi?'<b>'+esc(fb.firma_adi)+'</b>':'')
+    +(fb.adres?'<div style="font-size:11px">'+esc(fb.adres)+'</div>':'')
+    +'</div><div class="spec-meta"><b>Spec No / Specification No:</b> '+specPrintValue(s.spec_kodu)
+    +'<br><b>Versiyon / Version:</b> v'+esc(s.versiyon_no||1)
+    +'<br><b>Tarih / Date:</b> '+new Date().toLocaleDateString('tr-TR')
+    +'</div></div>'
+    +'<h2>Ürün Spesifikasyonu / Product Specification</h2>'
+    +specPrintSection('1. Ürün Adı / Product Name', '<p>'+specPrintValue(s.gida_adi||u.ad)+'</p>')
+    +specPrintSection('2. Ürün Tanımı / Product Description', '<p>'+specPrintValue(u.aciklama)+'</p>')
+    +specPrintSection('3. İçindekiler / Ingredients', '<p>'+(icindekilerMetni(s.urun_id)||'—')+'</p>')
+    +specPrintSection('4. Fiziksel, Kimyasal ve Mikrobiyolojik Parametreler / Physical, Chemical and Microbiological Parameters',
+      tablo('<tr><th>Tür / Type</th><th>Parametre / Parameter</th><th>Min</th><th>Max</th><th>Birim / Unit</th></tr>'
+      +(s.fiziksel_kimyasal_parametreler||[]).map(function(p){
+        return '<tr><td>Fiziksel/Kimyasal<br>Physical/Chemical</td><td>'+specPrintValue(p.parametre)+'</td><td>'+specPrintValue(p.min)+'</td><td>'+specPrintValue(p.max)+'</td><td>'+specPrintValue(p.birim)+'</td></tr>';
+      }).join('')
+      +(s.mikrobiyolojik_parametreler||[]).map(function(p){
+        return '<tr><td>Mikrobiyolojik<br>Microbiological</td><td>'+specPrintValue(p.parametre)+'</td><td>'+specPrintValue(p.min)+'</td><td>'+specPrintValue(p.max)+'</td><td>'+specPrintValue(p.birim)+'</td></tr>';
+      }).join('')+(!(s.fiziksel_kimyasal_parametreler||[]).length&&!(s.mikrobiyolojik_parametreler||[]).length?'<tr><td colspan="5">—</td></tr>':''))
+      +(s.fiziksel_kimyasal_limitler?'<p><b>Fiziksel/kimyasal not / Physical/chemical note:</b> '+esc(s.fiziksel_kimyasal_limitler)+'</p>':'')
+      +(s.mikrobiyolojik_limitler?'<p><b>Mikrobiyolojik not / Microbiological note:</b> '+esc(s.mikrobiyolojik_limitler)+'</p>':''))
+    +specPrintSection('5. Alerjen Bildirgesi / Allergen Declaration',
+      tablo(specPrintRow('İçerir / Contains', s.alerjen_beyani?esc(s.alerjen_beyani):bosBeyan)
+      +specPrintRow('Çapraz bulaşma riski / Cross-contact risk', specPrintValue(s.capraz_bulasma_riski))))
+    +specPrintSection('6. Beslenme Bildirimi / Nutrition Declaration',
+      '<p>100 g veya 100 ml için / Per 100 g or 100 ml</p>'
+      +tablo('<tr><th>Besin öğesi / Nutrient</th><th>Değer / Value</th></tr>'
+      +specPrintRow('Enerji / Energy', s.enerji_kcal==null?'—':fmt(Math.round(Number(s.enerji_kcal)*4.184))+' kJ / '+fmt(s.enerji_kcal)+' kcal')
+      +specPrintRow('Yağ / Fat', specPrintGram(s.yag_g))
+      +'<tr><td class="spec-indent">– Doymuş yağ / Saturates</td><td>'+specPrintGram(s.doymus_yag_g)+'</td></tr>'
+      +specPrintRow('Karbonhidrat / Carbohydrate', specPrintGram(s.karbonhidrat_g))
+      +'<tr><td class="spec-indent">– Şekerler / Sugars</td><td>'+specPrintGram(s.seker_g)+'</td></tr>'
+      +specPrintRow('Protein / Protein', specPrintGram(s.protein_g))
+      +specPrintRow('Tuz / Salt', specPrintGram(s.tuz_g))))
+    +specPrintSection('7. Mevzuata Uyum Bilgisi / Regulatory Compliance Information',
+      tablo('<tr><th>Konu / Topic</th><th>Beyan / Statement</th><th>Dayanak / Evidence</th></tr>'
+      +[['GDO','GDO / GMO'],['Pestisit kalıntıları','Pestisit kalıntıları / Pesticide residues'],['Bulaşanlar','Bulaşanlar / Contaminants'],['Diğer','Diğer / Other']].map(function(k){
+        var b=(s.uyum_beyanlari||[]).find(function(x){return x.konu===k[0];})||{};
+        return '<tr><td>'+esc(k[1])+'</td><td>'+(b.beyan?esc(b.beyan):bosBeyan)+'</td><td>'+specPrintValue(b.dayanak)+'</td></tr>';
+      }).join(''))
+      +((s.yasal_dayanaklar||[]).length?'<p><b>İlgili mevzuat / Applicable regulations:</b> '+s.yasal_dayanaklar.map(esc).join(', ')+'</p>':''))
+    +specPrintSection('8. Paketleme Bildirimi / Packaging Information',
+      tablo(specPrintRow('Ambalaj tipi / Packaging type', (s.ambalaj_secenekleri||[]).length?s.ambalaj_secenekleri.map(esc).join(', '):'—')
+      +specPrintRow('Net miktar / Net quantity', specPrintValue(s.net_miktar))
+      +specPrintRow('Ambalaj özellikleri / Packaging specifications', specPrintValue(s.ambalaj_spesifikasyonu))
+      +(s.urun_olcusu?specPrintRow('Ürün ölçüsü / Product dimensions', esc(s.urun_olcusu)):''))
+      +((s.gramaj_secenekleri||[]).length?tablo('<tr><th>Net miktar / Net quantity</th><th>Palet ölçüsü / Pallet size</th><th>Palette adet / Units per pallet</th></tr>'
+        +s.gramaj_secenekleri.map(function(g){return '<tr><td>'+specPrintValue(g.net_miktar)+'</td><td>'+specPrintValue(g.palet_olcusu)+'</td><td>'+specPrintValue(g.palette_adet)+'</td></tr>';}).join('')):''))
+    +specPrintSection('9. Hedef Tüketici Grubu / Intended Consumer Group', '<p>'+specPrintValue(s.hedef_tuketici_grubu)+'</p>')
+    +specPrintSection('10. Duyusal Özellikler / Sensory Characteristics',
+      tablo('<tr><th>Kriter / Criterion</th><th>Açıklama / Description</th></tr>'
+      +(s.duyusal_kriterler_yapilandirilmis||[]).filter(function(d){return d.kriter&&d.aciklama;}).map(function(d){
+        return '<tr><td>'+esc(d.kriter)+'</td><td>'+esc(d.aciklama)+'</td></tr>';
+      }).join('')+(!(s.duyusal_kriterler_yapilandirilmis||[]).some(function(d){return d.kriter&&d.aciklama;})?'<tr><td colspan="2">—</td></tr>':'')))
+    +specPrintSection('11. Üretim Metodu / Production Method', '<p>'+specPrintValue(s.uretim_metodu)+'</p>')
+    +(s.kullanim_talimati?specPrintSection('12. Pişirme veya Kullanım Önerisi / Cooking or Usage Instructions', '<p>'+esc(s.kullanim_talimati)+'</p>'):'')
+    +specPrintSection('13. Raf Ömrü / Shelf Life',
+      tablo(specPrintRow('Raf ömrü / Shelf life', s.raf_omru_ay==null?'—':esc(s.raf_omru_ay)+' '+esc(s.raf_omru_birim||'ay'))
+      +specPrintRow('Tarih ifadesi / Date marking', specPrintValue(s.tavsiye_son_tuketim))))
+    +specPrintSection('14. Depolama ve Taşıma Koşulları / Storage and Transport Conditions',
+      tablo(specPrintRow('Depolama / Storage', specPrintValue(s.muhafaza_kosullari))
+      +specPrintRow('Taşıma / Transport', specPrintValue(s.tasima_kosullari))))
+    +specPrintSection('15. Ürün Beyanları / Product Claims', '<p>'+specPrintValue(s.urun_beyanlari)+'</p>')
+    +specPrintSection('16. Menşe Ülke / Country of Origin', '<p>'+specPrintValue(s.mensei_ulke)+'</p>')
+    +'<div style="margin-top:20px;border-top:1px solid #D8E4BB;padding-top:9px;font-size:11px">'
+    +'<b>Hazırlayan / Prepared by:</b> — &nbsp; <b>Onaylayan / Approved by:</b> '+specPrintValue(s.onaylayan_ad)
+    +' &nbsp; <b>Onay tarihi / Approval date:</b> '+(s.onay_tarihi?new Date(s.onay_tarihi).toLocaleDateString('tr-TR'):'—')
+    +'</div></div></div><div class="mf"><button class="btn btn-line" data-urs-act="closeModal">Kapat</button><button class="btn btn-leaf" data-urs-act="printPage">🖨 Yazdır</button></div>';
   openModal(html);
 }
-
 // ---------------------------------------------------------------------------
 // ETİKET METNİ — spesifikasyon + reçete verisinden TGK'ya uygun ambalaj metni
 // türetilir (alerjenler BÜYÜK HARF vurgulu). Ayrı veri girişi/DB alanı YOK.
